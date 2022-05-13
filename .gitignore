@@ -1,0 +1,9 @@
+*.aux
+*.bcf
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.xml
+*.toc
+_minted-cuda_recap
