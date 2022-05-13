@@ -1351,31 +1351,31 @@ One can also mention other synonyms \verb|dim3 threadIdx| $\equiv$ \verb|dim3 th
 
 %mention optimization for https://developer.nvidia.com/blog/cuda-pro-tip-increase-performance-with-vectorized-memory-access/
 
-\subsection{Atomics}
-
-
-
-
-
-%[https://developer.nvidia.com/blog/cooperative-groups/].
-
-
-
-\subsection{Thread block synchronization}
-
-\section{Streams}
-
-\section{Optimization}
-\begin{enumerate}
-    \item grid strided loop (for matrix multiplication, for saxpy, etc)%https://developer.nvidia.com/blog/cuda-pro-tip-increase-performance-with-vectorized-memory-access/
-    \item
-\end{enumerate}
-
-\section{Minimal developpers tools}
-\begin{itemize}
-   \item cuda timer
-\end{itemize}
-
+%\subsection{Atomics}
+%
+%
+%
+%
+%
+%%[https://developer.nvidia.com/blog/cooperative-groups/].
+%
+%
+%
+%\subsection{Thread block synchronization}
+%
+%\section{Streams}
+%
+%\section{Optimization}
+%\begin{enumerate}
+%    \item grid strided loop (for matrix multiplication, for saxpy, etc)%https://developer.nvidia.com/blog/cuda-pro-tip-increase-performance-with-vectorized-memory-access/
+%    \item
+%\end{enumerate}
+%
+%\section{Minimal developpers tools}
+%\begin{itemize}
+%   \item cuda timer
+%\end{itemize}
+%
 
 \section{Appendix}
 \subsection*{Improving with primitive operations}\label{App.:Primitive operations}
@@ -1385,25 +1385,26 @@ knowledge of binary number representation, we can verify that \verb|if( (id_x%(s
 equivalent to \verb|if( (id_x&(stride*2 -1) ) == 0)|. It would impossible for me to come up with this small 
 optimization on my own. Maybe for CS majors, it is evident.
 
-\begin{listing}[!ht]
-\begin{minted}[frame=single, linenos=true]{zsh}
-CUDACODE
-\end{minted}
-\vspace{-0.7cm}
-\caption{Compiling with nvcc and launching a CUDA program on Linux}
-\label{nvcc_cuda}
-\end{listing}
-
-
-\begin{enumerate}
-   \item description of cases, when pitch allocation is useful.
-   \item pinned and pageable memory
-\item \_\_align\_\_
-\item error hadling basics   
-
-\end{enumerate}
-
-\printbibliography
-\bibliography{citation}   
+%\begin{listing}[!ht]
+%\begin{minted}[frame=single, linenos=true]{zsh}
+%CUDACODE
+%\end{minted}
+%\vspace{-0.7cm}
+%\caption{Compiling with nvcc and launching a CUDA program on Linux}
+%\label{nvcc_cuda}
+%\end{listing}
+%
+%
+%\begin{enumerate}
+%   \item description of cases, when pitch allocation is useful.
+%   \item pinned and pageable memory
+%\item \_\_align\_\_
+%\item error hadling basics   
+%
+%\end{enumerate}
+%
+%\printbibliography
+%\bibliography{citation}   
+%
 
 \end{document}
