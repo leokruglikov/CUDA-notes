@@ -1,0 +1,9 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{+w}{   }\PYG{n}{cudaError\PYGZus{}t}\PYG{+w}{ }\PYG{n}{cudaMemcpy2D}\PYG{+w}{ }\PYG{p}{(}\PYG{+w}{ }\PYG{k+kt}{void}\PYG{+w}{ }\PYG{o}{*}\PYG{+w}{ }\PYG{n}{dst}\PYG{p}{,}
+\PYG{+w}{      }\PYG{k+kt}{size\PYGZus{}t}\PYG{+w}{ }\PYG{n}{dpitch}\PYG{p}{,}
+\PYG{+w}{      }\PYG{k}{const}\PYG{+w}{ }\PYG{k+kt}{void}\PYG{+w}{ }\PYG{o}{*}\PYG{+w}{ }\PYG{n}{src}\PYG{p}{,}
+\PYG{+w}{      }\PYG{k+kt}{size\PYGZus{}t}\PYG{+w}{ }\PYG{n}{spitch}\PYG{p}{,}
+\PYG{+w}{      }\PYG{k+kt}{size\PYGZus{}t}\PYG{+w}{ }\PYG{n}{width}\PYG{p}{,}
+\PYG{+w}{      }\PYG{k+kt}{size\PYGZus{}t}\PYG{+w}{ }\PYG{n}{height}\PYG{p}{,}
+\PYG{+w}{      }\PYG{k}{enum}\PYG{+w}{ }\PYG{n}{cudaMemcpyKind}\PYG{+w}{ }\PYG{n}{kind}\PYG{+w}{ }\PYG{p}{)}
+\end{Verbatim}

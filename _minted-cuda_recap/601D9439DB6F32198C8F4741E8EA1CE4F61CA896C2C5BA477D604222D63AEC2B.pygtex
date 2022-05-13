@@ -1,0 +1,4 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{+w}{   }\PYG{n}{\PYGZdl{}nvcc}\PYG{+w}{ }\PYG{o}{\PYGZhy{}}\PYG{n}{o}\PYG{+w}{ }\PYG{n}{main}\PYG{+w}{ }\PYG{n}{main}\PYG{p}{.}\PYG{n}{cu}
+\PYG{+w}{   }\PYG{n}{\PYGZdl{}}\PYG{p}{.}\PYG{o}{/}\PYG{n}{main}
+\end{Verbatim}

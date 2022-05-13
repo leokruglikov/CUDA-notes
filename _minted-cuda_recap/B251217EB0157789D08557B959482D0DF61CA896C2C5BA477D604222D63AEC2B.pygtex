@@ -1,0 +1,10 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{k+kt}{void}\PYG{+w}{ }\PYG{n+nf}{reduction}\PYG{p}{(}\PYG{k+kt}{float}\PYG{+w}{ }\PYG{o}{*}\PYG{n}{d\PYGZus{}out}\PYG{p}{,}\PYG{+w}{ }\PYG{k+kt}{float}\PYG{+w}{ }\PYG{o}{*}\PYG{n}{d\PYGZus{}in}\PYG{p}{,}\PYG{+w}{ }\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n}{n\PYGZus{}thr}\PYG{p}{,}\PYG{+w}{ }\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n}{size}\PYG{p}{)\PYGZob{}}
+\PYG{+w}{   }\PYG{n}{cudaMemcpy}\PYG{p}{(}\PYG{n}{d\PYGZus{}out}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{d\PYGZus{}in}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{size}\PYG{+w}{ }\PYG{o}{*}\PYG{+w}{ }\PYG{k}{sizeof}\PYG{p}{(}\PYG{k+kt}{float}\PYG{p}{),}\PYG{+w}{ }\PYG{n}{cudaMemcpyDeviceToDevice}\PYG{p}{);}
+\PYG{+w}{   }\PYG{k}{while}\PYG{p}{(}\PYG{n}{size}\PYG{+w}{ }\PYG{o}{\PYGZgt{}}\PYG{+w}{ }\PYG{l+m+mi}{1}\PYG{p}{)\PYGZob{}}
+\PYG{+w}{      }\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n}{n\PYGZus{}bl}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{p}{(}\PYG{n}{size}\PYG{+w}{ }\PYG{o}{+}\PYG{+w}{ }\PYG{n}{n\PYGZus{}thr}\PYG{+w}{ }\PYG{o}{\PYGZhy{}}\PYG{+w}{ }\PYG{l+m+mi}{1}\PYG{p}{)}\PYG{o}{/}\PYG{n}{n\PYGZus{}thr}\PYG{p}{;}
+\PYG{+w}{      }\PYG{n}{reduce\PYGZus{}shared}\PYG{o}{\PYGZlt{}\PYGZlt{}\PYGZlt{}}\PYG{n}{n\PYGZus{}bl}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{n\PYGZus{}thr}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{n\PYGZus{}thr}\PYG{o}{*}\PYG{k}{sizeof}\PYG{p}{(}\PYG{k+kt}{float}\PYG{p}{),}\PYG{+w}{ }\PYG{l+m+mi}{0}\PYG{o}{\PYGZgt{}\PYGZgt{}\PYGZgt{}}\PYG{p}{(}\PYG{n}{d\PYGZus{}out}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{d\PYGZus{}out}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{size}\PYG{p}{);}
+\PYG{+w}{      }\PYG{n}{size}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{n\PYGZus{}blocks}\PYG{p}{;}
+\PYG{+w}{   }\PYG{p}{\PYGZcb{}}
+\PYG{p}{\PYGZcb{}}
+\end{Verbatim}

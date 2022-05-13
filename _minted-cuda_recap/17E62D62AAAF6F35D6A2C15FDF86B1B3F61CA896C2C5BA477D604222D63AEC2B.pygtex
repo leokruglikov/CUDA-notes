@@ -1,0 +1,18 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{k+kr}{\PYGZus{}\PYGZus{}global\PYGZus{}\PYGZus{}}\PYG{+w}{ }\PYG{k+kt}{void}\PYG{+w}{ }\PYG{n}{reduce\PYGZus{}global\PYGZus{}kernel}\PYG{p}{(}\PYG{k+kt}{float}\PYG{+w}{ }\PYG{o}{*}\PYG{n}{data\PYGZus{}out}\PYG{p}{,}\PYGZbs{}
+\PYG{+w}{               }\PYG{k+kt}{float}\PYG{+w}{ }\PYG{o}{*}\PYG{n}{data\PYGZus{}in}\PYG{p}{,}\PYG{+w}{ }\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n}{stride}\PYG{p}{,}\PYG{+w}{ }\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n}{size}\PYG{p}{)}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
+\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n}{idx\PYGZus{}x}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n+nb}{blockIdx}\PYG{p}{.}\PYG{n}{x}\PYG{+w}{ }\PYG{o}{*}\PYG{+w}{ }\PYG{n+nb}{blockDim}\PYG{p}{.}\PYG{n}{x}\PYG{+w}{ }\PYG{o}{+}\PYG{+w}{ }\PYG{n+nb}{threadIdx}\PYG{p}{.}\PYG{n}{x}\PYG{p}{;}
+\PYG{k}{if}\PYG{p}{(}\PYG{n}{idx\PYGZus{}x}\PYG{+w}{ }\PYG{o}{+}\PYG{+w}{ }\PYG{n}{stride}\PYG{+w}{ }\PYG{o}{\PYGZlt{}}\PYG{+w}{ }\PYG{n}{size}\PYG{p}{)\PYGZob{}}
+\PYG{n}{data\PYGZus{}out}\PYG{p}{[}\PYG{n}{idx\PYGZus{}x}\PYG{p}{]}\PYG{+w}{ }\PYG{o}{+=}\PYG{+w}{ }\PYG{n}{data\PYGZus{}in}\PYG{p}{[}\PYG{n}{idx\PYGZus{}x}\PYG{+w}{ }\PYG{o}{+}\PYG{+w}{ }\PYG{n}{stride}\PYG{p}{];}
+\PYG{p}{\PYGZcb{}}
+\PYG{p}{\PYGZcb{}}
+
+\PYG{k+kt}{void}\PYG{+w}{ }\PYG{n}{reduce\PYGZus{}global}\PYG{p}{(}\PYG{k+kt}{float}\PYG{+w}{ }\PYG{o}{*}\PYG{n}{d\PYGZus{}out}\PYG{p}{,}\PYG{+w}{ }\PYG{k+kt}{float}\PYG{+w}{ }\PYG{o}{*}\PYG{n}{d\PYGZus{}in}\PYG{p}{,}\PYG{+w}{ }\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n}{n\PYGZus{}threads}\PYG{p}{,}\PYG{+w}{ }\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n}{size}\PYG{p}{)}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
+\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n}{n\PYGZus{}blocks}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{p}{(}\PYG{n}{size}\PYG{+w}{ }\PYG{o}{+}\PYG{+w}{ }\PYG{n}{n\PYGZus{}threads}\PYG{+w}{ }\PYG{o}{\PYGZhy{}}\PYG{+w}{ }\PYG{l+m+mi}{1}\PYG{p}{)}\PYG{+w}{ }\PYG{o}{/}\PYG{+w}{ }\PYG{n}{n\PYGZus{}threads}\PYG{p}{;}
+\PYG{k}{for}\PYG{+w}{ }\PYG{p}{(}\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n}{stride}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{l+m+mi}{1}\PYG{p}{;}\PYG{+w}{ }\PYG{n}{stride}\PYG{+w}{ }\PYG{o}{\PYGZlt{}}\PYG{+w}{ }\PYG{n}{size}\PYG{p}{;}\PYG{+w}{ }\PYG{n}{stride}\PYG{+w}{ }\PYG{o}{*=}\PYG{+w}{ }\PYG{l+m+mi}{2}\PYG{p}{)\PYGZob{}}
+\PYG{+w}{   }\PYG{n}{reduce\PYGZus{}global\PYGZus{}kernel}\PYG{o}{\PYGZlt{}\PYGZlt{}\PYGZlt{}}\PYG{n}{n\PYGZus{}blocks}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{n\PYGZus{}threads}\PYG{o}{\PYGZgt{}\PYGZgt{}\PYGZgt{}}\PYG{p}{(}\PYG{n}{d\PYGZus{}out}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{d\PYGZus{}in}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{stride}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{size}\PYG{p}{);}
+\PYG{p}{\PYGZcb{}}
+\PYG{p}{\PYGZcb{}}
+
+\PYG{c+c1}{//main()}
+\end{Verbatim}

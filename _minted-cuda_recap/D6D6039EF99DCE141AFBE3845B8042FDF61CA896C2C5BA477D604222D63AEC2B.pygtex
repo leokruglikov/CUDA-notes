@@ -1,0 +1,7 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{+w}{    }\PYG{k}{auto}\PYG{+w}{ }\PYG{n}{tb}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{this\PYGZus{}thread\PYGZus{}block}\PYG{p}{();}\PYG{+w}{ }\PYG{c+c1}{// gets the thread block in kernel}
+\PYG{+w}{    }\PYG{n}{tb}\PYG{p}{.}\PYG{n}{sync}\PYG{p}{()}\PYG{+w}{ }\PYG{c+c1}{// same method as in cooperative\PYGZus{}groups}
+\PYG{+w}{    }\PYG{n}{cooperative\PYGZus{}groups}\PYG{o}{::}\PYG{n}{synchronize}\PYG{p}{(}\PYG{n}{tb}\PYG{p}{);}
+\PYG{+w}{    }\PYG{n}{this\PYGZus{}thread\PYGZus{}block}\PYG{p}{().}\PYG{n}{synchronize}\PYG{p}{();}
+\PYG{+w}{    }\PYG{n}{cooperative\PYGZus{}groups}\PYG{o}{::}\PYG{n}{synchronize}\PYG{p}{(}\PYG{n}{this\PYGZus{}thread\PYGZus{}block}\PYG{p}{());}
+\end{Verbatim}

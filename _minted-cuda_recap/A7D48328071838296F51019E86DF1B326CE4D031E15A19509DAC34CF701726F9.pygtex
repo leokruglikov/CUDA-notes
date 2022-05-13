@@ -1,0 +1,31 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+
+
+
+
+\PYGZpc{}https://stackoverflow.com/questions/16119943/how\PYGZhy{}and\PYGZhy{}when\PYGZhy{}should\PYGZhy{}i\PYGZhy{}use\PYGZhy{}pitched\PYGZhy{}pointer\PYGZhy{}with\PYGZhy{}the\PYGZhy{}cuda\PYGZhy{}api
+
+
+
+
+
+
+
+
+
+
+
+
+\PYG{l+s+se}{\PYGZbs{}s}ubsection\PYG{o}{\PYGZob{}}More remarks on memory\PYG{o}{\PYGZcb{}}
+
+\PYG{l+s+se}{\PYGZbs{}s}ection\PYG{o}{\PYGZob{}}Efficiency of parallel algorithms\PYG{o}{\PYGZcb{}}
+
+\PYG{l+s+se}{\PYGZbs{}s}ection\PYG{o}{\PYGZob{}}Streams\PYG{o}{\PYGZcb{}}
+
+\PYG{l+s+se}{\PYGZbs{}s}ection\PYG{o}{\PYGZob{}}Optimization\PYG{o}{\PYGZcb{}}
+
+\PYG{l+s+se}{\PYGZbs{}s}ection\PYG{o}{\PYGZob{}}Minimal developpers tools\PYG{o}{\PYGZcb{}}
+
+\PYG{l+s+se}{\PYGZbs{}s}ection\PYG{o}{\PYGZob{}}Appendix\PYG{o}{\PYGZcb{}}
+
+\end{Verbatim}

@@ -1,0 +1,17 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{k+kt}{\PYGZus{}\PYGZus{}device\PYGZus{}\PYGZus{}}\PYG{+w}{ }\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n}{reduce\PYGZus{}sum}\PYG{p}{(}
+\PYG{+w}{    }\PYG{n}{cooperative\PYGZus{}groups}\PYG{o}{::}\PYG{n}{thread\PYGZus{}group}\PYG{+w}{ }\PYG{n}{gr}\PYG{p}{,}\PYG{+w}{ }\PYGZbs{}
+\PYG{+w}{                        }\PYG{k+kt}{int}\PYG{+w}{ }\PYG{o}{*}\PYG{n}{temp}\PYG{p}{,}\PYG{+w}{ }\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n}{val}\PYG{p}{)\PYGZob{}}
+\PYG{+w}{    }\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n}{lane}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{g}\PYG{p}{.}\PYG{n}{thread\PYGZus{}rank}\PYG{p}{();}
+
+\PYG{+w}{    }\PYG{k}{for}\PYG{+w}{ }\PYG{p}{(}\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n}{i}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{g}\PYG{p}{.}\PYG{n}{size}\PYG{p}{()}\PYG{+w}{ }\PYG{o}{/}\PYG{+w}{ }\PYG{l+m+mi}{2}\PYG{p}{;}\PYG{+w}{ }\PYG{n}{i}\PYG{+w}{ }\PYG{o}{\PYGZgt{}}\PYG{+w}{ }\PYG{l+m+mi}{0}\PYG{p}{;}\PYG{+w}{ }\PYG{n}{i}\PYG{+w}{ }\PYG{o}{/=}\PYG{+w}{ }\PYG{l+m+mi}{2}\PYG{p}{)\PYGZob{}}
+\PYG{c+c1}{//map each element in the first \PYGZdq{}semi\PYGZdq{} block}
+\PYG{c+c1}{//to it\PYGZsq{}s corresponding element in the second one}
+\PYG{+w}{        }\PYG{n}{temp}\PYG{p}{[}\PYG{n}{lane}\PYG{p}{]}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{val}\PYG{p}{;}
+\PYG{+w}{        }\PYG{n}{g}\PYG{p}{.}\PYG{n}{sync}\PYG{p}{();}\PYG{+w}{ }\PYG{c+c1}{// wait for all threads to store}
+\PYG{+w}{        }\PYG{k}{if}\PYG{p}{(}\PYG{n}{lane}\PYG{o}{\PYGZlt{}}\PYG{n}{i}\PYG{p}{)}\PYG{+w}{ }\PYG{n}{val}\PYG{+w}{ }\PYG{o}{+=}\PYG{+w}{ }\PYG{n}{temp}\PYG{p}{[}\PYG{n}{lane}\PYG{+w}{ }\PYG{o}{+}\PYG{+w}{ }\PYG{n}{i}\PYG{p}{];}
+\PYG{+w}{        }\PYG{n}{g}\PYG{p}{.}\PYG{n}{sync}\PYG{p}{();}\PYG{+w}{ }\PYG{c+c1}{// wait for all threads in to load}
+\PYG{+w}{    }\PYG{p}{\PYGZcb{}}
+\PYG{+w}{    }\PYG{k}{return}\PYG{+w}{ }\PYG{n}{val}\PYG{p}{;}\PYG{+w}{ }\PYG{c+c1}{//only thread 0 will return full sum}
+\PYG{p}{\PYGZcb{}}
+\end{Verbatim}

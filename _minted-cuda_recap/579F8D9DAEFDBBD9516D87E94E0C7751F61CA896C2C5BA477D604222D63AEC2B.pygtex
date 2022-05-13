@@ -1,0 +1,8 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+
+\PYG{+w}{   }\PYG{n}{cudaMallocPitch}\PYG{p}{(}\PYG{+w}{ }\PYG{k+kt}{void}\PYG{o}{**}\PYG{+w}{ }\PYG{n}{devicePtr}\PYG{p}{,}
+\PYG{+w}{                }\PYG{k+kt}{size\PYGZus{}t}\PYG{o}{*}\PYG{+w}{ }\PYG{n}{pitch}\PYG{p}{,}
+\PYG{+w}{                }\PYG{k+kt}{size\PYGZus{}t}\PYG{+w}{ }\PYG{n}{widthInBytes}\PYG{p}{,}
+\PYG{+w}{                }\PYG{k+kt}{size\PYGZus{}t}\PYG{+w}{ }\PYG{n}{height}\PYG{p}{)}
+
+\end{Verbatim}

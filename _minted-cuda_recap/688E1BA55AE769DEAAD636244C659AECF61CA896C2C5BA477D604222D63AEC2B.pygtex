@@ -1,0 +1,75 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{k}{typedef}\PYG{+w}{ }\PYG{k}{struct}\PYG{p}{\PYGZob{}}
+\PYG{+w}{   }\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n}{width}\PYG{p}{;}\PYG{+w}{ }\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n}{height}\PYG{p}{;}\PYG{+w}{ }\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n}{stride}\PYG{p}{;}
+\PYG{+w}{   }\PYG{k+kt}{float}\PYG{+w}{ }\PYG{o}{*}\PYG{n}{elements}\PYG{p}{;}
+\PYG{p}{\PYGZcb{}}\PYG{n}{Matrix}\PYG{p}{;}
+
+\PYG{k+kt}{\PYGZus{}\PYGZus{}device\PYGZus{}\PYGZus{}}\PYG{+w}{ }\PYG{k+kt}{float}\PYG{+w}{ }\PYG{n}{GetElement}\PYG{p}{(}\PYG{k}{const}\PYG{+w}{ }\PYG{n}{Matrix}\PYG{+w}{ }\PYG{n}{D}\PYG{p}{,}\PYG{+w}{ }\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n}{row}\PYG{p}{,}\PYG{+w}{ }\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n}{col}\PYG{p}{)}
+\PYG{p}{\PYGZob{}}
+\PYG{+w}{    }\PYG{k}{return}\PYG{+w}{ }\PYG{n}{D}\PYG{p}{.}\PYG{n}{elements}\PYG{p}{[}\PYG{n}{row}\PYG{+w}{ }\PYG{o}{*}\PYG{+w}{ }\PYG{n}{D}\PYG{p}{.}\PYG{n}{stride}\PYG{+w}{ }\PYG{o}{+}\PYG{+w}{ }\PYG{n}{col}\PYG{p}{];}
+\PYG{p}{\PYGZcb{}}
+
+\PYG{k+kt}{\PYGZus{}\PYGZus{}device\PYGZus{}\PYGZus{}}\PYG{+w}{ }\PYG{n}{Matrix}\PYG{+w}{ }\PYG{n}{GetSubMatrix}\PYG{p}{(}\PYG{n}{Matrix}\PYG{+w}{ }\PYG{n}{D}\PYG{p}{,}\PYG{+w}{ }\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n}{row}\PYG{p}{,}\PYG{+w}{ }\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n}{col}\PYG{p}{)}
+\PYG{p}{\PYGZob{}}
+\PYG{+w}{    }\PYG{n}{Matrix}\PYG{+w}{ }\PYG{n}{sub}\PYG{p}{;}
+\PYG{+w}{    }\PYG{n}{sub}\PYG{p}{.}\PYG{n}{width}\PYG{+w}{    }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{BLOCK\PYGZus{}SIZE}\PYG{p}{;}
+\PYG{+w}{    }\PYG{n}{sub}\PYG{p}{.}\PYG{n}{height}\PYG{+w}{   }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{BLOCK\PYGZus{}SIZE}\PYG{p}{;}
+\PYG{+w}{    }\PYG{n}{sub}\PYG{p}{.}\PYG{n}{stride}\PYG{+w}{   }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{D}\PYG{p}{.}\PYG{n}{stride}\PYG{p}{;}
+\PYG{+w}{    }\PYG{n}{sub}\PYG{p}{.}\PYG{n}{elements}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{o}{\PYGZam{}}\PYG{n}{D}\PYG{p}{.}\PYG{n}{elements}\PYG{p}{[}\PYG{n}{D}\PYG{p}{.}\PYG{n}{stride}\PYG{+w}{ }\PYG{o}{*}\PYG{+w}{ }\PYG{n}{BLOCK\PYGZus{}SIZE}\PYG{+w}{ }\PYG{o}{*}\PYG{+w}{ }\PYG{n}{row}
+\PYG{+w}{                                         }\PYG{o}{+}\PYG{+w}{ }\PYG{n}{BLOCK\PYGZus{}SIZE}\PYG{+w}{ }\PYG{o}{*}\PYG{+w}{ }\PYG{n}{col}\PYG{p}{];}
+\PYG{+w}{    }\PYG{k}{return}\PYG{+w}{ }\PYG{n}{sub}\PYG{p}{;}
+\PYG{p}{\PYGZcb{}}
+
+\PYG{+w}{ }\PYG{k+kr}{\PYGZus{}\PYGZus{}global\PYGZus{}\PYGZus{}}\PYG{+w}{ }\PYG{k+kt}{void}\PYG{+w}{ }\PYG{n}{mult\PYGZus{}global}\PYG{p}{(}\PYG{n}{Matrix}\PYG{+w}{ }\PYG{n}{A}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{Matrix}\PYG{+w}{ }\PYG{n}{B}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{Matrix}\PYG{+w}{ }\PYG{n}{C}\PYG{p}{)}
+\PYG{p}{\PYGZob{}}
+\PYG{+w}{    }\PYG{c+c1}{// blockRow \PYGZam{} blockCol (see image)}
+\PYG{+w}{    }\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n}{blockRow}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n+nb}{blockIdx}\PYG{p}{.}\PYG{n}{y}\PYG{p}{;}
+\PYG{+w}{    }\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n}{blockCol}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n+nb}{blockIdx}\PYG{p}{.}\PYG{n}{x}\PYG{p}{;}
+
+\PYG{+w}{    }\PYG{c+c1}{// Create Csub, initial matrix}
+\PYG{+w}{    }\PYG{n}{Matrix}\PYG{+w}{ }\PYG{n}{Csub}\PYG{p}{;}
+\PYG{+w}{    }\PYG{n}{Csub}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{GetSubMatrix}\PYG{p}{(}\PYG{n}{C}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{blockRow}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{blockCol}\PYG{p}{);}
+\PYG{+w}{    }\PYG{k+kt}{float}\PYG{+w}{ }\PYG{n}{Cvalue}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{l+m+mi}{0}\PYG{p}{;}\PYG{+w}{ }\PYG{c+c1}{//we will accumulate values (see figure above)}
+
+\PYG{+w}{    }\PYG{c+c1}{// Thread row and column within Csub}
+\PYG{+w}{    }\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n}{row}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n+nb}{threadIdx}\PYG{p}{.}\PYG{n}{y}\PYG{p}{;}
+\PYG{+w}{    }\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n}{col}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n+nb}{threadIdx}\PYG{p}{.}\PYG{n}{x}\PYG{p}{;}
+
+\PYG{+w}{    }\PYG{c+c1}{// Loop over all the sub\PYGZhy{}matrices of A and B}
+\PYG{+w}{    }\PYG{c+c1}{// Multiply each pair of sub\PYGZhy{}matrices together}
+\PYG{+w}{    }\PYG{k}{for}\PYG{+w}{ }\PYG{p}{(}\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n}{m}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{l+m+mi}{0}\PYG{p}{;}\PYG{+w}{ }\PYG{n}{m}\PYG{+w}{ }\PYG{o}{\PYGZlt{}}\PYG{+w}{ }\PYG{p}{(}\PYG{n}{A}\PYG{p}{.}\PYG{n}{width}\PYG{+w}{ }\PYG{o}{/}\PYG{+w}{ }\PYG{n}{BLOCK\PYGZus{}SIZE}\PYG{p}{);}\PYG{+w}{ }\PYG{o}{++}\PYG{n}{m}\PYG{p}{)}\PYG{+w}{ }\PYG{p}{\PYGZob{}}\PYG{c+c1}{//iterate over}
+\PYG{+w}{                                          }\PYG{c+c1}{//sub\PYGZhy{}matrices//of A(see fig above)}
+\PYG{+w}{        }\PYG{n}{Matrix}\PYG{+w}{ }\PYG{n}{Asub}\PYG{o}{=}\PYG{n}{GetSubMatrix}\PYG{p}{(}\PYG{n}{A}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{blockRow}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{m}\PYG{p}{);}\PYG{c+c1}{//Asub of A(m\PYGZhy{}the index of row)}
+\PYG{+w}{        }\PYG{n}{Matrix}\PYG{+w}{ }\PYG{n}{Bsub}\PYG{o}{=}\PYG{n}{GetSubMatrix}\PYG{p}{(}\PYG{n}{B}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{m}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{blockCol}\PYG{p}{);}\PYG{c+c1}{//Bsub of B(m\PYGZhy{}the index of col)}
+
+\PYG{+w}{        }\PYG{c+c1}{// shared memory to store Asub and Bsub}
+\PYG{+w}{        }\PYG{k+kt}{\PYGZus{}\PYGZus{}shared\PYGZus{}\PYGZus{}}\PYG{+w}{ }\PYG{k+kt}{float}\PYG{+w}{ }\PYG{n}{Asub}\PYG{p}{[}\PYG{n}{BLOCK\PYGZus{}SIZE}\PYG{p}{][}\PYG{n}{BLOCK\PYGZus{}SIZE}\PYG{p}{];}
+\PYG{+w}{        }\PYG{k+kt}{\PYGZus{}\PYGZus{}shared\PYGZus{}\PYGZus{}}\PYG{+w}{ }\PYG{k+kt}{float}\PYG{+w}{ }\PYG{n}{Bsub}\PYG{p}{[}\PYG{n}{BLOCK\PYGZus{}SIZE}\PYG{p}{][}\PYG{n}{BLOCK\PYGZus{}SIZE}\PYG{p}{];}
+
+\PYG{+w}{        }\PYG{c+c1}{// Each thread loads one element of each sub\PYGZhy{}matrix Asub and Bsub}
+\PYG{+w}{        }\PYG{n}{As}\PYG{p}{[}\PYG{n}{row}\PYG{p}{][}\PYG{n}{col}\PYG{p}{]}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{GetElement}\PYG{p}{(}\PYG{n}{Asub}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{row}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{col}\PYG{p}{);}
+\PYG{+w}{        }\PYG{n}{Bs}\PYG{p}{[}\PYG{n}{row}\PYG{p}{][}\PYG{n}{col}\PYG{p}{]}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{GetElement}\PYG{p}{(}\PYG{n}{Bsub}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{row}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{col}\PYG{p}{);}
+
+\PYG{+w}{        }\PYG{c+c1}{//All threads must be synced, to be sure all data is loaded properly}
+\PYG{+w}{        }\PYG{n+nf}{\PYGZus{}\PYGZus{}syncthreads}\PYG{p}{();}
+
+\PYG{+w}{        }\PYG{c+c1}{// Use matrix multiplication formula to get the Csub element}
+\PYG{+w}{        }\PYG{k}{for}\PYG{+w}{ }\PYG{p}{(}\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n}{e}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{l+m+mi}{0}\PYG{p}{;}\PYG{+w}{ }\PYG{n}{e}\PYG{+w}{ }\PYG{o}{\PYGZlt{}}\PYG{+w}{ }\PYG{n}{BLOCK\PYGZus{}SIZE}\PYG{p}{;}\PYG{+w}{ }\PYG{o}{++}\PYG{n}{e}\PYG{p}{)\PYGZob{}}
+\PYG{+w}{            }\PYG{n}{Cvalue}\PYG{+w}{ }\PYG{o}{+=}\PYG{+w}{ }\PYG{n}{Asub}\PYG{p}{[}\PYG{n}{row}\PYG{p}{][}\PYG{n}{e}\PYG{p}{]}\PYG{+w}{ }\PYG{o}{*}\PYG{+w}{ }\PYG{n}{Bsub}\PYG{p}{[}\PYG{n}{e}\PYG{p}{][}\PYG{n}{col}\PYG{p}{];}
+\PYG{+w}{        }\PYG{p}{\PYGZcb{}}
+
+\PYG{+w}{        }\PYG{n+nf}{\PYGZus{}\PYGZus{}syncthreads}\PYG{p}{();}\PYG{+w}{ }\PYG{c+c1}{//synchronize before new sub\PYGZhy{}matrices are loaded}
+\PYG{+w}{    }\PYG{p}{\PYGZcb{}}
+\PYG{+w}{    }\PYG{n}{C}\PYG{p}{.}\PYG{n}{elements}\PYG{p}{[}\PYG{n}{row}\PYG{+w}{ }\PYG{o}{*}\PYG{+w}{ }\PYG{n}{A}\PYG{p}{.}\PYG{n}{stride}\PYG{+w}{ }\PYG{o}{+}\PYG{+w}{ }\PYG{n}{col}\PYG{p}{]}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{Cvalue}\PYG{p}{;}
+\PYG{p}{\PYGZcb{}}
+\PYG{+w}{   }\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n}{main}\PYG{p}{()\PYGZob{}}
+\PYG{+w}{      }\PYG{c+cm}{/*init matrices on host}
+\PYG{c+cm}{      * init matrices on device with cudaMalloc(),}
+\PYG{c+cm}{      * copy data from host to device}
+\PYG{c+cm}{      */}
+\PYG{+w}{   }\PYG{k+kt}{dim3}\PYG{+w}{ }\PYG{n+nf}{dimBlock}\PYG{p}{(}\PYG{n}{BLOCK\PYGZus{}SIZE}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{BLOCK\PYGZus{}SIZE}\PYG{p}{);}
+\PYG{+w}{   }\PYG{k+kt}{dim3}\PYG{+w}{ }\PYG{n+nf}{dimGrid}\PYG{p}{(}\PYG{n}{B}\PYG{p}{.}\PYG{n}{width}\PYG{+w}{ }\PYG{o}{/}\PYG{+w}{ }\PYG{n}{dimBlock}\PYG{p}{.}\PYG{n}{x}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{A}\PYG{p}{.}\PYG{n}{height}\PYG{+w}{ }\PYG{o}{/}\PYG{+w}{ }\PYG{n}{dimBlock}\PYG{p}{.}\PYG{n}{y}\PYG{p}{);}
+\PYG{+w}{   }\PYG{n}{mult\PYGZus{}global}\PYG{o}{\PYGZlt{}\PYGZlt{}\PYGZlt{}}\PYG{n}{dimGrid}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{dimBlock}\PYG{o}{\PYGZgt{}\PYGZgt{}\PYGZgt{}}\PYG{p}{(}\PYG{n}{d\PYGZus{}A}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{d\PYGZus{}B}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{d\PYGZus{}C}\PYG{p}{);}
+\PYG{+w}{   }\PYG{p}{\PYGZcb{}}
+
+\end{Verbatim}

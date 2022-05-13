@@ -1,0 +1,46 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{c+cp}{\PYGZsh{}include}\PYG{+w}{ }\PYG{c+cpf}{\PYGZdq{}stdio.h\PYGZdq{}}
+\PYG{c+cp}{\PYGZsh{}define N\PYGZus{}THREADS 512}
+\PYG{c+cp}{\PYGZsh{}define N\PYGZus{}BLOCKS 64}
+\PYG{k+kt}{void}\PYG{+w}{ }\PYG{n+nf}{init\PYGZus{}host\PYGZus{}vector}\PYG{p}{(}\PYG{k+kt}{double}\PYG{+w}{ }\PYG{o}{*}\PYG{n}{a}\PYG{p}{,}\PYG{+w}{ }\PYG{k+kt}{double}\PYG{+w}{ }\PYG{o}{*}\PYG{n}{b}\PYG{p}{);}
+\PYG{k+kt}{void}\PYG{+w}{ }\PYG{n+nf}{check\PYGZus{}result}\PYG{p}{(}\PYG{k+kt}{double}\PYG{+w}{ }\PYG{o}{*}\PYG{n}{res}\PYG{p}{);}
+
+\PYG{k+kr}{\PYGZus{}\PYGZus{}global\PYGZus{}\PYGZus{}}
+\PYG{k+kt}{void}\PYG{+w}{ }\PYG{n}{add\PYGZus{}vec}\PYG{p}{(}\PYG{k+kt}{double}\PYG{+w}{ }\PYG{o}{*}\PYG{n}{a}\PYG{p}{,}\PYG{+w}{ }\PYG{k+kt}{double}\PYG{+w}{ }\PYG{o}{*}\PYG{n}{b}\PYG{p}{,}\PYG{+w}{ }\PYG{k+kt}{double}\PYG{+w}{ }\PYG{o}{*}\PYG{n}{res}\PYG{p}{)\PYGZob{}}
+\PYG{+w}{    }\PYG{c+c1}{//compute the index}
+\PYG{+w}{    }\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n}{id}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n+nb}{blockIdx}\PYG{p}{.}\PYG{n}{x}\PYG{o}{*}\PYG{n+nb}{blockDim}\PYG{p}{.}\PYG{n}{x}\PYG{o}{+}\PYG{n+nb}{threadIdx}\PYG{p}{.}\PYG{n}{x}\PYG{p}{;}
+\PYG{+w}{    }\PYG{k}{if}\PYG{p}{(}\PYG{n}{id}\PYG{+w}{ }\PYG{o}{\PYGZlt{}}\PYG{+w}{ }\PYG{n}{N\PYGZus{}THREADS}\PYG{o}{*}\PYG{n}{N\PYGZus{}BLOCKS}\PYG{p}{)\PYGZob{}}
+\PYG{+w}{        }\PYG{n}{res}\PYG{p}{[}\PYG{n}{id}\PYG{p}{]}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{a}\PYG{p}{[}\PYG{n}{id}\PYG{p}{]}\PYG{+w}{ }\PYG{o}{+}\PYG{+w}{ }\PYG{n}{b}\PYG{p}{[}\PYG{n}{id}\PYG{p}{];}
+\PYG{+w}{    }\PYG{p}{\PYGZcb{}}
+\PYG{p}{\PYGZcb{}}
+
+\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n}{main}\PYG{p}{()\PYGZob{}}
+\PYG{+w}{    }\PYG{k}{const}\PYG{+w}{ }\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n}{size\PYGZus{}in\PYGZus{}bytes}\PYG{+w}{ }\PYG{o}{=}\PYG{n}{N\PYGZus{}THREADS}\PYG{o}{*}\PYG{n}{N\PYGZus{}BLOCKS}\PYG{o}{*}\PYG{k}{sizeof}\PYG{p}{(}\PYG{k+kt}{double}\PYG{p}{);}
+\PYG{+w}{    }\PYG{c+c1}{//initialize the data on HOST}
+\PYG{+w}{    }\PYG{c+c1}{//malloc() (C) or new (C++)}
+\PYG{+w}{    }\PYG{k+kt}{double}\PYG{+w}{ }\PYG{o}{*}\PYG{n}{hst\PYGZus{}a}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{p}{(}\PYG{k+kt}{double}\PYG{+w}{ }\PYG{o}{*}\PYG{p}{)}\PYG{n}{malloc}\PYG{p}{(}\PYG{n}{size\PYGZus{}in\PYGZus{}bytes}\PYG{p}{);}
+\PYG{+w}{    }\PYG{k+kt}{double}\PYG{+w}{ }\PYG{o}{*}\PYG{n}{hst\PYGZus{}b}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{p}{(}\PYG{k+kt}{double}\PYG{+w}{ }\PYG{o}{*}\PYG{p}{)}\PYG{n}{malloc}\PYG{p}{(}\PYG{n}{size\PYGZus{}in\PYGZus{}bytes}\PYG{p}{);}
+\PYG{+w}{    }\PYG{k+kt}{double}\PYG{+w}{ }\PYG{o}{*}\PYG{n}{hst\PYGZus{}res}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{p}{(}\PYG{k+kt}{double}\PYG{+w}{ }\PYG{o}{*}\PYG{p}{)}\PYG{n}{malloc}\PYG{p}{(}\PYG{n}{size\PYGZus{}in\PYGZus{}bytes}\PYG{p}{);}
+
+\PYG{+w}{    }\PYG{n}{init\PYGZus{}host\PYGZus{}vector}\PYG{p}{(}\PYG{n}{hst\PYGZus{}a}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{hst\PYGZus{}b}\PYG{p}{);}
+
+\PYG{+w}{    }\PYG{c+c1}{//allocate memory on GPU}
+\PYG{+w}{    }\PYG{k+kt}{double}\PYG{o}{*}\PYG{+w}{ }\PYG{n}{dv\PYGZus{}a}\PYG{p}{;}\PYG{+w}{    }\PYG{n}{cudaMalloc}\PYG{p}{(}\PYG{o}{\PYGZam{}}\PYG{n}{dv\PYGZus{}a}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{size\PYGZus{}in\PYGZus{}bytes}\PYG{p}{);}
+\PYG{+w}{    }\PYG{k+kt}{double}\PYG{o}{*}\PYG{+w}{ }\PYG{n}{dv\PYGZus{}b}\PYG{p}{;}\PYG{+w}{    }\PYG{n}{cudaMalloc}\PYG{p}{(}\PYG{o}{\PYGZam{}}\PYG{n}{dv\PYGZus{}b}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{size\PYGZus{}in\PYGZus{}bytes}\PYG{p}{);}
+\PYG{+w}{    }\PYG{k+kt}{double}\PYG{o}{*}\PYG{+w}{ }\PYG{n}{dv\PYGZus{}res}\PYG{p}{;}\PYG{+w}{  }\PYG{n}{cudaMalloc}\PYG{p}{(}\PYG{o}{\PYGZam{}}\PYG{n}{dv\PYGZus{}res}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{size\PYGZus{}in\PYGZus{}bytes}\PYG{p}{);}
+
+\PYG{+w}{    }\PYG{n}{cudaMemcpy}\PYG{p}{(}\PYG{n}{dv\PYGZus{}a}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{hst\PYGZus{}a}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{size\PYGZus{}in\PYGZus{}bytes}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{cudaMemcpyHostToDevice}\PYG{p}{);}
+\PYG{+w}{    }\PYG{n}{cudaMemcpy}\PYG{p}{(}\PYG{n}{dv\PYGZus{}b}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{hst\PYGZus{}b}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{size\PYGZus{}in\PYGZus{}bytes}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{cudaMemcpyHostToDevice}\PYG{p}{);}
+
+\PYG{+w}{    }\PYG{n}{add\PYGZus{}vec}\PYG{o}{\PYGZlt{}\PYGZlt{}\PYGZlt{}}\PYG{n}{N\PYGZus{}BLOCKS}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{N\PYGZus{}THREADS}\PYG{o}{\PYGZgt{}\PYGZgt{}\PYGZgt{}}\PYG{p}{(}\PYG{n}{dv\PYGZus{}a}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{dv\PYGZus{}b}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{dv\PYGZus{}res}\PYG{p}{);}
+\PYG{+w}{    }\PYG{n}{cudaDeviceSynchronize}\PYG{p}{();}
+\PYG{+w}{    }\PYG{n}{cudaMemcpy}\PYG{p}{(}\PYG{+w}{ }\PYG{n}{hst\PYGZus{}res}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{dv\PYGZus{}res}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{size\PYGZus{}in\PYGZus{}bytes}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{cudaMemcpyDeviceToHost}\PYG{+w}{ }\PYG{p}{);}
+
+\PYG{+w}{    }\PYG{n}{check\PYGZus{}result}\PYG{p}{(}\PYG{n}{hst\PYGZus{}res}\PYG{p}{);}
+
+\PYG{+w}{    }\PYG{n}{cudaFree}\PYG{p}{(}\PYG{n}{dv\PYGZus{}res}\PYG{p}{);}\PYG{+w}{   }\PYG{n}{free}\PYG{p}{(}\PYG{n}{hst\PYGZus{}res}\PYG{p}{);}
+\PYG{+w}{    }\PYG{n}{cudaFree}\PYG{p}{(}\PYG{n}{dv\PYGZus{}a}\PYG{p}{);}\PYG{+w}{     }\PYG{n}{free}\PYG{p}{(}\PYG{n}{hst\PYGZus{}a}\PYG{p}{);}
+\PYG{+w}{    }\PYG{n}{cudaFree}\PYG{p}{(}\PYG{n}{dv\PYGZus{}b}\PYG{p}{);}\PYG{+w}{     }\PYG{n}{free}\PYG{p}{(}\PYG{n}{hst\PYGZus{}b}\PYG{p}{);}
+\PYG{+w}{    }\PYG{k}{return}\PYG{+w}{ }\PYG{l+m+mi}{0}\PYG{p}{;}
+\PYG{p}{\PYGZcb{}}
+\end{Verbatim}

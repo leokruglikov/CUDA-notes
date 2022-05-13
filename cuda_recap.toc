@@ -1,0 +1,43 @@
+\babel@toc {english}{}\relax 
+\contentsline {section}{\numberline {1}Basics of Architecture}{4}{section.1}%
+\contentsline {subsection}{\numberline {1.1}Execution abstraction}{5}{subsection.1.1}%
+\contentsline {paragraph}{\underline {Threads}}{5}{section*.6}%
+\contentsline {paragraph}{\underline {Blocks}}{5}{section*.7}%
+\contentsline {paragraph}{\underline {Grid}}{6}{section*.8}%
+\contentsline {paragraph}{The mapping abstraction}{6}{section*.9}%
+\contentsline {subsection}{\numberline {1.2}Parallel execution and warps}{7}{subsection.1.2}%
+\contentsline {subsection}{\numberline {1.3}Memory model}{7}{subsection.1.3}%
+\contentsline {paragraph}{Coalesced vs uncoalesced memory access.}{7}{figure.caption.12}%
+\contentsline {paragraph}{\underline {Global memory}}{8}{section*.13}%
+\contentsline {paragraph}{\underline {Shared memory}}{8}{section*.14}%
+\contentsline {paragraph}{Bank conflicts.}{8}{section*.15}%
+\contentsline {paragraph}{Read-only memory$\ast $}{9}{section*.17}%
+\contentsline {paragraph}{Local registers}{9}{section*.18}%
+\contentsline {subsection}{\numberline {1.4}Memor allocation model}{10}{subsection.1.4}%
+\contentsline {section}{\numberline {2}Programming in CUDA}{10}{section.2}%
+\contentsline {paragraph}{}{10}{section*.19}%
+\contentsline {subsection}{\numberline {2.1}Setup}{10}{subsection.2.1}%
+\contentsline {subsubsection}{\numberline {2.1.1}Hello from CUDA}{11}{subsubsection.2.1.1}%
+\contentsline {subsection}{\numberline {2.2}Threads \& blocks indexing}{11}{subsection.2.2}%
+\contentsline {subsection}{\numberline {2.3}Memory}{12}{subsection.2.3}%
+\contentsline {subsubsection}{\numberline {2.3.1}Vector addition}{12}{subsubsection.2.3.1}%
+\contentsline {paragraph}{A more complex indexing.}{12}{section*.20}%
+\contentsline {paragraph}{Allocate memory on host.}{14}{section*.22}%
+\contentsline {paragraph}{Allocate memory on device.}{14}{section*.23}%
+\contentsline {paragraph}{Data copying}{14}{section*.24}%
+\contentsline {paragraph}{Calculation.}{15}{section*.25}%
+\contentsline {paragraph}{Terminating.}{15}{section*.26}%
+\contentsline {subsubsection}{\numberline {2.3.2}Multiple dimension memory}{15}{subsubsection.2.3.2}%
+\contentsline {subsection}{\numberline {2.4}Shared memory vs global memory}{17}{subsection.2.4}%
+\contentsline {paragraph}{Global}{17}{section*.27}%
+\contentsline {paragraph}{Bank conflicts.}{23}{section*.31}%
+\contentsline {subsection}{\numberline {2.5}More remarks on memory}{24}{subsection.2.5}%
+\contentsline {section}{\numberline {3}Basic parallel algorithms \& patterns}{25}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Reduce}{25}{subsection.3.1}%
+\contentsline {section}{\numberline {4}CUDA synchronization mechanisms}{31}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Atomics}{32}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Thread block synchronization}{32}{subsection.4.2}%
+\contentsline {section}{\numberline {5}Streams}{32}{section.5}%
+\contentsline {section}{\numberline {6}Optimization}{32}{section.6}%
+\contentsline {section}{\numberline {7}Minimal developpers tools}{33}{section.7}%
+\contentsline {section}{\numberline {8}Appendix}{33}{section.8}%

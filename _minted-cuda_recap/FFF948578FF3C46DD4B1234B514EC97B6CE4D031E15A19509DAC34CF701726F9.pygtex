@@ -1,0 +1,4 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+   \PYG{n+nv}{\PYGZdl{}nvcc} \PYGZhy{}o main main.cu
+   \PYGZdl{}./main
+\end{Verbatim}

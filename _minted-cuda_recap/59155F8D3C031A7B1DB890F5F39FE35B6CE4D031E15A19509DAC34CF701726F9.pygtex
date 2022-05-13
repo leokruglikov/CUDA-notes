@@ -1,0 +1,7 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+   \PYGZdl{}./main
+   Hi from GPU, from thread id \PYG{l+m}{0} and block id \PYG{l+m}{0}
+   Hi from GPU, from thread id \PYG{l+m}{1} and block id \PYG{l+m}{0}
+   Hi from GPU, from thread id \PYG{l+m}{2} and block id \PYG{l+m}{0}
+   Hi from GPU, from thread id \PYG{l+m}{3} and block id \PYG{l+m}{0}
+\end{Verbatim}

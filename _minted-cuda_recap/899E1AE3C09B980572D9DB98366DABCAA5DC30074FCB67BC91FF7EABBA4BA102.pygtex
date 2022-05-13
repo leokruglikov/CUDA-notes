@@ -1,0 +1,49 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{c+cp}{\PYGZsh{}include}\PYG{+w}{ }\PYG{c+cpf}{\PYGZdq{}stdio.h\PYGZdq{}}
+\PYG{c+cp}{\PYGZsh{}define BLOCK\PYGZus{}SIZE 16}
+
+\PYG{k}{typedef}\PYG{+w}{ }\PYG{k}{struct}\PYG{p}{\PYGZob{}}
+\PYG{+w}{    }\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n}{height}\PYG{p}{;}\PYG{+w}{ }\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n}{width}\PYG{p}{;}\PYG{+w}{ }\PYG{k+kt}{float}\PYG{o}{*}\PYG{+w}{ }\PYG{n}{element}\PYG{p}{;}
+\PYG{p}{\PYGZcb{}}\PYG{n}{Matrix}\PYG{p}{;}
+
+\PYG{k+kr}{\PYGZus{}\PYGZus{}global\PYGZus{}\PYGZus{}}\PYG{+w}{ }\PYG{k+kt}{void}\PYG{+w}{ }\PYG{n}{matmul\PYGZus{}global}\PYG{p}{(}\PYG{k}{const}\PYG{+w}{ }\PYG{n}{Matrix}\PYG{+w}{ }\PYG{n}{a}\PYG{p}{,}\PYGZbs{}
+\PYG{k}{const}\PYG{+w}{ }\PYG{n}{Matrix}\PYG{+w}{ }\PYG{n}{b}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{Matrix}\PYG{+w}{ }\PYG{n}{c}\PYG{p}{);}
+
+\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n+nf}{main}\PYG{p}{()\PYGZob{}}
+\PYG{+w}{    }\PYG{c+c1}{//init matrices A and B}
+\PYG{+w}{    }\PYG{n}{Matrix}\PYG{+w}{ }\PYG{n}{A}\PYG{p}{;}\PYG{+w}{ }\PYG{n}{A}\PYG{p}{.}\PYG{n}{height}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{l+m+mi}{32}\PYG{p}{;}\PYG{+w}{ }\PYG{n}{A}\PYG{p}{.}\PYG{n}{width}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{l+m+mi}{32}\PYG{p}{;}
+\PYG{+w}{    }\PYG{n}{Matrix}\PYG{+w}{ }\PYG{n}{d\PYGZus{}A}\PYG{p}{;}\PYG{+w}{ }\PYG{n}{d\PYGZus{}A}\PYG{p}{.}\PYG{n}{height}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{A}\PYG{p}{.}\PYG{n}{height}\PYG{p}{;}\PYG{+w}{ }\PYG{n}{d\PYGZus{}A}\PYG{p}{.}\PYG{n}{width}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{A}\PYG{p}{.}\PYG{n}{width}\PYG{p}{;}
+\PYG{+w}{    }\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n}{size}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{k}{sizeof}\PYG{p}{(}\PYG{k+kt}{float}\PYG{p}{)}\PYG{o}{*}\PYG{n}{d\PYGZus{}A}\PYG{p}{.}\PYG{n}{height}\PYG{o}{*}\PYG{n}{d\PYGZus{}A}\PYG{p}{.}\PYG{n}{width}\PYG{p}{;}
+\PYG{+w}{    }\PYG{n}{cudaMalloc}\PYG{p}{(}\PYG{o}{\PYGZam{}}\PYG{p}{(}\PYG{n}{d\PYGZus{}A}\PYG{p}{.}\PYG{n}{element}\PYG{p}{),}\PYG{+w}{ }\PYG{n}{size}\PYG{p}{);}
+\PYG{+w}{    }\PYG{n}{cudaMemcpy}\PYG{p}{(}\PYG{n}{d\PYGZus{}A}\PYG{p}{.}\PYG{n}{element}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{A}\PYG{p}{.}\PYG{n}{element}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{size}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{cudaMemcpyHostToDevice}\PYG{p}{);}
+\PYG{+w}{    }\PYG{c+cm}{/* same for d\PYGZus{}B}
+\PYG{c+cm}{        ...}
+\PYG{c+cm}{    */}
+
+\PYG{+w}{    }\PYG{c+c1}{//prepare memory, for device to write to}
+\PYG{+w}{    }\PYG{n}{Matrix}\PYG{+w}{ }\PYG{n}{d\PYGZus{}C}\PYG{p}{;}\PYG{+w}{ }\PYG{n}{d\PYGZus{}C}\PYG{p}{.}\PYG{n}{height}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{d\PYGZus{}A}\PYG{p}{.}\PYG{n}{height}\PYG{p}{;}\PYG{+w}{ }\PYG{n}{d\PYGZus{}C}\PYG{p}{.}\PYG{n}{width}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{d\PYGZus{}A}\PYG{p}{.}\PYG{n}{width}\PYG{p}{;}
+\PYG{+w}{    }\PYG{n}{cudaMalloc}\PYG{p}{(}\PYG{o}{\PYGZam{}}\PYG{p}{(}\PYG{n}{d\PYGZus{}C}\PYG{p}{.}\PYG{n}{element}\PYG{p}{),}\PYG{+w}{ }\PYG{n}{size}\PYG{p}{);}
+
+\PYG{+w}{    }\PYG{c+c1}{//prepare dimensions of the kernel (2D indexing)}
+\PYG{+w}{    }\PYG{k+kt}{dim3}\PYG{+w}{ }\PYG{n}{block\PYGZus{}dim}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{p}{(}\PYG{n}{BLOCK\PYGZus{}SIZE}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{BLOCK\PYGZus{}SIZE}\PYG{p}{);}\PYG{+w}{  }\PYG{c+c1}{//dimension of block                 }
+\PYG{+w}{    }\PYG{k+kt}{dim3}\PYG{+w}{ }\PYG{n}{grid\PYGZus{}dim}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{p}{(}\PYG{n}{A}\PYG{p}{.}\PYG{n}{width}\PYG{o}{/}\PYG{n}{BLOCK\PYGZus{}SIZE}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{A}\PYG{p}{.}\PYG{n}{height}\PYG{o}{/}\PYG{n}{BLOCK\PYGZus{}SIZE}\PYG{p}{);}\PYG{+w}{ }\PYG{c+c1}{//dim. of blocks grid }
+\PYG{+w}{    }\PYG{n}{matmul\PYGZus{}global}\PYG{o}{\PYGZlt{}\PYGZlt{}\PYGZlt{}}\PYG{n}{block\PYGZus{}dim}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{grid\PYGZus{}dim}\PYG{o}{\PYGZgt{}\PYGZgt{}\PYGZgt{}}\PYG{p}{(}\PYG{n}{d\PYGZus{}A}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{d\PYGZus{}B}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{d\PYGZus{}C}\PYG{p}{);}
+
+\PYG{+w}{    }\PYG{c+cm}{/*}
+\PYG{c+cm}{    cudaMemcpy(...); free(...); cudaFree(...); //free the ressources}
+\PYG{c+cm}{    */}
+\PYG{p}{\PYGZcb{}}
+
+\PYG{k+kr}{\PYGZus{}\PYGZus{}global\PYGZus{}\PYGZus{}}\PYG{+w}{ }\PYG{k+kt}{void}\PYG{+w}{ }\PYG{n}{matmul\PYGZus{}global}\PYG{p}{(}\PYG{k}{const}\PYG{+w}{ }\PYG{n}{Matrix}\PYG{+w}{ }\PYG{n}{A}\PYG{p}{,}\PYG{+w}{ }\PYG{k}{const}\PYG{+w}{ }\PYG{n}{Matrix}\PYG{+w}{ }\PYG{n}{B}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{Matrix}\PYG{+w}{ }\PYG{n}{C}\PYG{p}{)\PYGZob{}}
+\PYG{+w}{    }\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n}{row\PYGZus{}id}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n+nb}{blockDim}\PYG{p}{.}\PYG{n}{y}\PYG{o}{*}\PYG{n+nb}{blockIdx}\PYG{p}{.}\PYG{n}{y}\PYG{+w}{ }\PYG{o}{+}\PYG{+w}{ }\PYG{n+nb}{threadIdx}\PYG{p}{.}\PYG{n}{y}\PYG{p}{;}
+\PYG{+w}{    }\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n}{col\PYGZus{}id}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n+nb}{blockDim}\PYG{p}{.}\PYG{n}{x}\PYG{o}{*}\PYG{n+nb}{blockIdx}\PYG{p}{.}\PYG{n}{x}\PYG{+w}{ }\PYG{o}{+}\PYG{+w}{ }\PYG{n+nb}{threadIdx}\PYG{p}{.}\PYG{n}{x}\PYG{p}{;}
+
+\PYG{+w}{    }\PYG{c+c1}{//accumulate sum for c\PYGZus{}\PYGZob{}row\PYGZus{}id,col\PYGZus{}id\PYGZcb{} element}
+\PYG{+w}{    }\PYG{k+kt}{float}\PYG{+w}{ }\PYG{n}{tempsum}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{l+m+mf}{0.0}\PYG{p}{;}
+\PYG{+w}{    }\PYG{k}{for}\PYG{p}{(}\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n}{k}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{l+m+mi}{0}\PYG{p}{;}\PYG{+w}{ }\PYG{n}{k}\PYG{o}{\PYGZlt{}}\PYG{n}{A}\PYG{p}{.}\PYG{n}{width}\PYG{p}{;}\PYG{+w}{ }\PYG{n}{k}\PYG{o}{++}\PYG{p}{)\PYGZob{}}
+\PYG{+w}{        }\PYG{n}{tempsum}\PYG{+w}{ }\PYG{o}{+=}\PYG{+w}{ }\PYG{n}{A}\PYG{p}{.}\PYG{n}{element}\PYG{p}{[}\PYG{n}{row\PYGZus{}id}\PYG{o}{*}\PYG{n}{A}\PYG{p}{.}\PYG{n}{width}\PYG{+w}{ }\PYG{o}{+}\PYG{+w}{ }\PYG{n}{k}\PYG{p}{]}\PYG{o}{*}\PYGZbs{}
+\PYG{+w}{                   }\PYG{n}{B}\PYG{p}{.}\PYG{n}{element}\PYG{p}{[}\PYG{n}{k}\PYG{o}{*}\PYG{n}{B}\PYG{p}{.}\PYG{n}{width}\PYG{+w}{ }\PYG{o}{+}\PYG{+w}{ }\PYG{n}{col\PYGZus{}id}\PYG{p}{];}
+\PYG{+w}{    }\PYG{p}{\PYGZcb{}}
+\PYG{+w}{    }\PYG{n}{C}\PYG{p}{.}\PYG{n}{element}\PYG{p}{[}\PYG{n}{row\PYGZus{}id}\PYG{o}{*}\PYG{n}{C}\PYG{p}{.}\PYG{n}{width}\PYG{+w}{ }\PYG{o}{+}\PYG{+w}{ }\PYG{n}{col\PYGZus{}id}\PYG{p}{]}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{tempsum}\PYG{p}{;}
+\PYG{p}{\PYGZcb{}}
+\end{Verbatim}
