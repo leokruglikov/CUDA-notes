@@ -9,3 +9,4 @@ The LaTeX document isn't __clean__ enough, regarding the references and paragrap
 
 The author will do its best to add new chapters and section, as well as modify the new lacking features, meantioned above.
 The pdf document - `cuda_recap.pdf` and the source LaTeX code - `cuda_recap.tex`
+![notes on cuda](cuda_recap.pdf "notes on cuda")
