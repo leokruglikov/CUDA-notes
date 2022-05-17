@@ -1,5 +1,6 @@
-# Notes on CUDA
-## For dummies from dummy
+# Introduction to CUDA
+## Parsonal notes
+### For dummies from dummy
 
 I want to share with you my personal notes on this topic. At the moment, 
 there are lot's of things to be completed and added, as initially, they were written for my personal use. 

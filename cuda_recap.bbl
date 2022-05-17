@@ -1,0 +1,22 @@
+\begin{thebibliography}{1}
+
+\bibitem{center}
+Cuda c++ programming guide.
+\newblock URL:
+  \url{https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#programming-model}.
+
+\bibitem{blog_2020}
+Cooperative groups: Flexible cuda thread programming, Aug 2020.
+\newblock URL: \url{https://developer.nvidia.com/blog/cooperative-groups/}.
+
+\bibitem{MemoryAlignment}
+Fang's notebook. nichijou.co, May 2022.
+\newblock URL: \url{https://nichijou.co/cudaRandom-memAlign/}.
+
+\bibitem{tuomanen2018hands}
+Brian Tuomanen.
+\newblock {\em Hands-On GPU Programming with Python and CUDA: Explore
+  high-performance parallel computing with CUDA}.
+\newblock Packt Publishing Ltd, 2018.
+
+\end{thebibliography}

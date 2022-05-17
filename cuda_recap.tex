@@ -24,12 +24,8 @@
 %\usepackage{subfigure}
 %\usepackage[numbers]{natbib}
 
-\usepackage[
-    backend=biber,
-    style=numeric,
-]{biblatex}
+\usepackage{cite}
 
-\addbibresource{citation.bib}
 
 
 \usepackage{nicefrac}
@@ -287,7 +283,7 @@ Imagine a certain number of warps are scheduled by the SM. Lets say 2 blocks of 
 $2\text{blocks}\cdot\nicefrac{128\text{thr.}}{32} = 8 \text{warps}$. These warps fetch some data 
 from a certain field of memory of the GPU. We know that the warp is something very grouped, even physically 
 the threads are grouped in it. It would be logical that they access adjacent memory addresses. This notion 
-may seem quite confusing in the beginning, but let's see how Nvidia is describing it:
+may seem quite confusing in the beginning, but let's see how Nvidia is describing it\cite{center}:
 
 \vspace{-10pt}
 \begin{quote}
@@ -652,7 +648,7 @@ with 2D allocated memory. It is clear that we could do without this feature.
 Indeed, if we want to work with, let's say a 2D matrix, we could simply 
 transform with a 1D vector of size rows$\cdot$cols.
 However, there is a feature in the CUDA API, to allocate 2D, and even 
-3D memory. 
+3D memory\cite{MemoryAlignment}. 
 \newpage
 The method that implements 2D memory allocation is \verb|cudaMallocPitch| with the following signature:
 
@@ -1313,7 +1309,7 @@ __device__ int reduce_sum(
 \label{coop_group}
 %\end{listing}
     \caption{This method, is \sout{almost} the same as the first, optimized version of the reduce 
-    algorithm, using the shared memory \autoref{}. Therefore, one must note that this reduce_sum() method 
+    algorithm, using the shared memory \autoref{}. Therefore, one must note that this reduce\_sum() method 
     must be called for the array temp*, located in the shared memory.}
 
 \end{minipage}
@@ -1332,13 +1328,13 @@ class (do not pay attention to how we created this object and/or how it is decla
 The \verb|thread_rank()| function gets the ID/rank of the thread in the thread group \verb|g|.
 Then we're calling the \verb|sync()| function, which ensures that all the threads within the
 block will be done setting the \verb|val|, and the second to ensure that all threads are done reducing. It is important to understand, that all the threads will return the val. 
-However, only the thread 0 will accumulate all the \verb|val|'s.
+However, only the thread 0 will accumulate all the \verb|val|'s.\cite{blog_2020}
 
 \subsection*{Thread blocks}
 We've already seen the notion of a thread block many times. This notion was always quite \textit{abstract}. Indeed, while launching the kernel, we've 
 always kept the notion of thread blocks in our mind, but never actually accessed it. However, in newly introduced features, one "access" the 
 thread block explicitly. A quoted "access", because we can actually manage synchronization of the thread blocks. Remember the legacy \verb|__syncthreads()| function. 
-Well, syncing the this\_thread\_block() does the same thing as the \verb|\_\_syncthreads()|. Thus, there are several ways/semantics to synchronize the threads. 
+Well, syncing the this\_thread\_block() does the same thing as the \verb|__syncthreads()|. Thus, there are several ways/semantics to synchronize the threads. 
 The following function calls are synonyms.
 \begin{minted}[frame=single]{cuda}
     auto tb = this_thread_block(); // gets the thread block in kernel
@@ -1347,7 +1343,111 @@ The following function calls are synonyms.
     this_thread_block().synchronize();
     cooperative_groups::synchronize(this_thread_block());
 \end{minted}
-One can also mention other synonyms \verb|dim3 threadIdx| $\equiv$ \verb|dim3 thread_index()| and \verb|dim3 blockIdx| $\equiv$ \verb|dim3 group_index()|.
+One can also mention other synonyms \verb|dim3 threadIdx| $\equiv$ \verb|dim3 thread_index()| and \verb|dim3 blockIdx| $\equiv$ \verb|dim3 group_index()|. Thus one can easily replace 
+these built-in keywords with these new methods, without any noticeable performance issues.
+
+\subsection*{Partitioning}
+For these cooperative groups, a partitioning feature is also avaliable. For instance, if 
+we've created a thread thread block, by invoking \verb|auto tb = this_thread_block()|,
+one can divide it into more small parts, for instance, into groups of 16 threads. 
+This is done using the \verb|cooperative_groups::partition()|, method, which takes the 
+subject itself (the one to be partitioned into groups) and the number of threads per group.
+For instance, \verb|cooperative_groups::partition(tb, 16)| divides the thread block into 
+groups of 16 threads (so if e.g. a block has a max of 64 threads, this function will create)
+4 groups of 16 threads in each. 
+
+The object returned is a \verb|thread_group|. By accessing this object, it is possible to get 
+the thread's rank, \textbf{within the obtained thread\_group} (for instance, if we divide 
+the thread block into groups of 16 threads and, by passing this object to a device function,
+print the \verb|thread_rank()|, method, we will see numbers varying from 0 to 15). 
+
+The utility of these features overall is that it is less easier to make errors. Indeed, 
+the NVidia documentation states that the usage of these features significantly reduces the 
+risk of deadlocks. The concept of deadlocks is probably well known to the reader. This is 
+a typical situation, when we don't want different threads to access a critical section, and 
+ask them to be synchronized before accessing them. Consider the two pieces of code:
+
+\begin{listing}[!ht]
+\begin{minted}[frame=single, framesep=1mm]{cuda}
+__device__ int sum(int *x, int n) 
+{   ...
+    __syncthreads();
+    ...
+}
+__global__ void parallel_kernel(float *x, int n)
+{
+    if (threadIdx.x < blockDim.x / 2){
+        sum(x, count);  // Half of the threads enter and 
+                        //the other half-not
+    }                   
+}
+\end{minted}
+\caption*{}
+\label{deadlock}
+\end{listing}
+
+\vspace{-1.5cm}
+\begin{listing}[!ht]
+\begin{minted}[frame=single, framesep=1mm]{cuda}
+__device__ int sum(thread_block block, int *x, int n) 
+{   ...
+    block.sync();
+    ...
+}
+__global__ void parallel_kernel(float *x, int n)
+{
+    sum(this_thread_block(), x, count); //OK
+}
+\end{minted}
+\caption*{}
+\label{nodeadlock}
+\end{listing}
+
+In a nutshell, we clearly see a deadlock in the first piece of code, as 
+there are only threads with ID's less than the half of the block dimension, which will 
+enter the if condition. Those threads will perform their piece of code independently, 
+and then will wait for all the other threads in the block to be completed and 
+synchronized. This is a big issue, as there are threads, which will never start the \verb|sum()|
+kernel and will just sit up there, waiting for those, who have. So the two chuncks of threads
+will just wait for each other. 
+
+This is why one may find an application for the previously discussed primitives. 
+In the second piece of code, one call the method \verb|sum()| with a thread block. However, 
+we could have divided into groups, using either CUDA functionality discussed above, 
+\textbf{and only synchronize that block}, which, we are sure, will by run by all threads in 
+the block. 
+
+\subsection*{Warp synchronizations}
+%https://blog.csdn.net/jqw11/article/details/103071556
+While programming with CUDA, one never gets tired to tired to think about warps, and 
+how to optimize their execution. I do agree that it is not an easy task, to think of it, 
+while doing even some basic operations. The new NVidia architectures and new versions of the
+CUDA API, provide a simple way to navigate through these concepts.
+
+We have discussed a lot the advantages of the shared memory (e.g. for the speed and efficiency
+of the reduce algorithm). However, the new utilities give us a more faster, or even a more
+local way to perform some operations. Remember, shared memory is block-local memory. 
+Remember also that every thread has some kind of register to store small intermediate 
+values while performing a kernel. The so called \textit{warp level synchronization primitives}
+allow us to access a certain thread's local register from an another thread, 
+\underline{as long as they are in the same warp}. We introduce here the notion of the 
+\textbf{lane} (in fact, we used it briefly above). A lane is the thread id within the warp.
+%https://on-demand.gputechconf.com/gtc/2013/presentations/S3174-Kepler-Shuffle-Tips-Tricks.pdf
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 %mention optimization for https://developer.nvidia.com/blog/cuda-pro-tip-increase-performance-with-vectorized-memory-access/
 
@@ -1404,7 +1504,9 @@ optimization on my own. Maybe for CS majors, it is evident.
 %\end{enumerate}
 %
 %\printbibliography
-%\bibliography{citation}   
+\bibliography{citation}
+\bibliographystyle{plainurl}
+
 %
 
 \end{document}
