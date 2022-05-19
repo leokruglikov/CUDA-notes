@@ -177,7 +177,7 @@ are much less powerful than the actual CPU (\autoref{cpuvsgpu}).
 
 \begin{figure}
    \centering
-   \includegraphics[scale=0.4]{cpuvsgpu.png}
+   \includegraphics[scale=0.4]{pngs/cpuvsgpu.png}
    \caption{Schematic difference in architecture between the CPU and the GPU. Without going into details 
    (\sout{as mentionned in the disclaimer, the author have not studied it in depth}), one may be able to see that 
    the GPU has many smaller ALU's. They are less powerful than those of the CPU and don't stand a chance in 
@@ -236,7 +236,7 @@ sketch of the hardware/software mapping.
    %\begin{center}
       \vspace{-10pt}
       \centering
-      \includegraphics[height=6cm]{hard_soft.png}
+       \includegraphics[height=6cm]{pngs/hard_soft.png}
     %\end{center}
    \caption{}
    \label{abstraction}
@@ -273,7 +273,7 @@ notions concerning the memory model.
    %\begin{center}
       \vspace{-10pt}
       \centering
-      \includegraphics[height=5cm]{coalesced.png}
+      \includegraphics[height=5cm]{pngs/coalesced.png}
     %\end{center}
    \caption{}
    \label{coalesced}
@@ -346,7 +346,7 @@ the best, but the sketch should do the trick:
 
 \begin{figure}[H]
    \centering
-   \includegraphics[scale=0.18]{banks1.png}
+   \includegraphics[scale=0.18]{pngs/banks1.png}
    \caption{Memory banks serving the threads. Only one thread can access a bank with a certain ID simultaneously. 
    From the analogy, threads are clients, and banks are waiters, giving them memory.}
    \label{banks}
@@ -500,7 +500,7 @@ perfectly illustrates the need of GPU parallel model. Indeed, the component of t
  $x_i = a_i + b_i$. In parallel sequential execution, we would create a loop, iterate over all elements and 
 do something like \verb|x[i] = a[i] + b[i]|. In order to parallelize this workflow, we must initiate $N$ 
 threads, with $N = \text{number of components in the vector}$. But we know that the number of threads in one 
-block is limited. Let's check on Nvidia's official CUDA documentation concerning threads indexing. 
+block is limited. Let's check on Nvidia's official CUDA documentation \cite{center} concerning threads indexing. 
 \begin{quote}
    \textsl{For convenience, {\fontfamily{pcr}\selectfont threadIdx} is a 3-component vector, 
    so that threads can be identified using a one-dimensional, 
@@ -517,7 +517,7 @@ block is limited. Let's check on Nvidia's official CUDA documentation concerning
 Before writing some code, let's once again try to visualize the Nvidia's quote.
 \begin{figure}[H]
    \centering
-   \includegraphics[scale=0.25]{tindexing.png}
+   \includegraphics[scale=0.25]{pngs/tindexing.png}
    \label{tindexing}
    \caption{Simple example to illustrate a simple 1D indexing (supposing a block 
    contains 4 threads). We see how the expression \textsc{blockIdx.x*blockDim.x+threadIdx.x} is used (see below). 
@@ -666,7 +666,7 @@ cudaMallocPitch( void** devicePtr,
 \end{minipage}
 \begin{minipage}{0.4\textwidth}
    \hspace{0.2cm}
-\includegraphics[scale=0.10]{pitch.png}
+\includegraphics[scale=0.10]{pngs/pitch.png}
 \label{fig:pitch}
 \hspace{1cm}
 \end{minipage}
@@ -788,7 +788,7 @@ aspect is not simple yet basic. This is a common CUDA pattern, which needs to be
 \begin{wrapfigure}{R}{0.5\textwidth}
    \vspace{-0.9cm}
    \begin{center}
-   \includegraphics[width=0.6\textwidth]{globalmatrix.png}
+   \includegraphics[width=0.6\textwidth]{pngs/globalmatrix.png}
    \end{center}
    \vspace{-0.5cm}
    \captionsetup{justification=raggedleft}
@@ -936,9 +936,9 @@ with the scheme above.
 
 \begin{figure}[h!]
    \centering
-   \subfloat[\centering]{{\includegraphics[width=7cm]{bank_conflict.png} }}
+   \subfloat[\centering]{{\includegraphics[width=7cm]{pngs/bank_conflict.png} }}
    \qquad
-   \subfloat[\centering]{{\includegraphics[width=7cm]{bank_conflict-2.png} }}
+   \subfloat[\centering]{{\includegraphics[width=7cm]{pngs/bank_conflict-2.png} }}
    \caption{Bank conflicts}
    \label{fig:bankconflicts2}
 \end{figure}
@@ -1034,13 +1034,13 @@ $\nicefrac{N}{4}$ additions. This algorithm looks like a log-scale complexity.
    \centering
    \begin{subfigure}[t]{0.45\textwidth}
         \centering
-        \includegraphics[width=6cm]{reduce_global.jpg}
+        \includegraphics[width=6cm]{pngs/reduce_global.jpg}
         \caption{Fixed rod length and varying mass}
         \label{fig:static}
     \end{subfigure}
     \begin{subfigure}[t]{0.45\textwidth}
         \centering
-        \includegraphics[width=6cm]{reduce_shared.jpg}
+        \includegraphics[width=6cm]{pngs/reduce_shared.jpg}
         \caption{Fixed mass and varying rod length}
         \label{fig:dynamic}
     \end{subfigure}
@@ -1076,7 +1076,7 @@ for (int stride = 1; stride < size; stride *= 2){
 \begin{wrapfigure}{R}{0.45\textwidth}
    \vspace{-0.9cm}
    \begin{center}
-   \includegraphics[width=0.45\textwidth]{reduce_only_global.jpg}
+   \includegraphics[width=0.45\textwidth]{pngs/reduce_only_global.jpg}
    \end{center}
    \vspace{-0.5cm}
    \captionsetup{justification=raggedleft}
@@ -1108,7 +1108,7 @@ way of analyzing the problem. However, it can be optimized using the block's sha
 \begin{wrapfigure}{R}{0.5\textwidth}
    \vspace{-0.9cm}
    \begin{center}
-   \includegraphics[width=0.5\textwidth]{shared_reduce.jpg}
+   \includegraphics[width=0.5\textwidth]{pngs/shared_reduce.jpg}
    \end{center}
    \vspace{-0.5cm}
    \captionsetup{justification=raggedleft}
@@ -1435,7 +1435,17 @@ allow us to access a certain thread's local register from an another thread,
 %https://on-demand.gputechconf.com/gtc/2013/presentations/S3174-Kepler-Shuffle-Tips-Tricks.pdf
 
 
+\paragraph{A little disclaimer: }There are various Warp-level primitive functions. We will note that many function's
+name are similar, and only differ by the postfix \verb|_sync()|. For instance, 
+\verb|__shfl_xor()| and \verb|__shfl_xor_sync()|. Indeed, the ones with the \verb|_sync()|
+postfix is a improvement of the former. It is recommended to use the newer version instead.
+I will not go into great details between these differences. 
+I will just mention that there are differences in parameters
+\footnote{Frankly speaking, the author hasn't seen this additional parameter 
+being used in a very extensive way. This \textit{extra} parameter is often replaced with 
+some kind of hardcoded value}.
 
+Let's now briefly discuss the most used primitive functions.
 
 
 
