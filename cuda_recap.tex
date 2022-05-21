@@ -181,7 +181,7 @@ are much less powerful than the actual CPU (\autoref{cpuvsgpu}).
    \caption{Schematic difference in architecture between the CPU and the GPU. Without going into details 
    (\sout{as mentionned in the disclaimer, the author have not studied it in depth}), one may be able to see that 
    the GPU has many smaller ALU's. They are less powerful than those of the CPU and don't stand a chance in 
-    a theoretical \textit{1v1 battle}, but may do enough \textit{damage}, when working together.}
+    a theoretical \textit{1v1 battle}, but may do enough \textit{damage}, when working together.\cite{tuomanen2018hands}}
    \label{cpuvsgpu}
 \end{figure}
 
@@ -238,7 +238,7 @@ sketch of the hardware/software mapping.
       \centering
        \includegraphics[height=6cm]{pngs/hard_soft.png}
     %\end{center}
-   \caption{}
+   \caption{Hardware-software abstraction}
    \label{abstraction}
 \end{wrapfigure}
 The abstraction between the hardware and the software side of CUDA is shown \autoref{abstraction}. Once the function 
@@ -275,7 +275,7 @@ notions concerning the memory model.
       \centering
       \includegraphics[height=5cm]{pngs/coalesced.png}
     %\end{center}
-   \caption{}
+   \caption{Memory access optimization mechanism.}
    \label{coalesced}
 \end{wrapfigure}
 
@@ -527,6 +527,7 @@ Before writing some code, let's once again try to visualize the Nvidia's quote.
 
 Let's now write code to add a vector, using a 2D indexing: 
 
+\begin{listing}
 \begin{minted}[
    frame=single,
    framesep=2mm,
@@ -579,6 +580,8 @@ int main(){
     return 0;
 }
 \end{minted}
+    \caption{Basic vector addition, using sequential thread indexing. \cite{tuomanen2018hands}}
+\end{listing}
 
 Ok, there are multiple aspects to discuss...
 
@@ -649,7 +652,6 @@ Indeed, if we want to work with, let's say a 2D matrix, we could simply
 transform with a 1D vector of size rows$\cdot$cols.
 However, there is a feature in the CUDA API, to allocate 2D, and even 
 3D memory\cite{MemoryAlignment}. 
-\newpage
 The method that implements 2D memory allocation is \verb|cudaMallocPitch| with the following signature:
 
 
@@ -701,10 +703,10 @@ __global__ void access_2d(float* devPtr, size_t pitch,\
     }
 }
 \end{minted}
-\caption*{To get this straight, one should know 2D array work in pure C. 
+\caption{To get this straight, one should know 2D array work in pure C. 
 Indeed, to access each element, we access it using LINE by casting to \textsc{char*}, which 
 gives us the very first element of all the pitch. We see that this 2D pitch is allocated 
-\textbf{automatically} by the cuda memory management system.}
+    \textbf{automatically} by the cuda memory management system.\cite{blog_2020}}
 \label{allocation2d}
 \end{listing}
 As you might have guessed, this memory access is not extremely efficient as it is here, as here, really, 
@@ -735,7 +737,10 @@ Let's now consider a more complex and yet classical example - matrices. Recall b
 One can perform these operations using the global memory, or shared memory.
 
 \paragraph{Global} version code snippet is given down below.
+\begin{listing}
 \inputminted[linenos=true, frame=single]{cuda}{cucodes/matmulglob.cu}
+    \caption{Basic, yet important, global memory usage. \cite{tuomanen2018hands}}
+\end{listing}
 
 Before moving to the code discussion, let's make a small \textit{intermezzo}
 on transforming 2D array to 1D, to make things clear and easier for further analysis:
@@ -772,6 +777,8 @@ each thread will perform the calculation for each element $c_{i,j}$ of the matri
 Each thread must iterate over one line of the matrix $A$ and one column of $B$. Remember the \hyperref[intermezzo1d2d]{1D to 2D mapping}. 
 is going through all the elements in the row $i$ of the matrix $A$ (line 43). 
 
+
+
 \vspace{-0.9cm}
 \begin{gather*}
  A_{i, h} = A_{0} + i\cdot N_{cols(A)} + h
@@ -785,16 +792,8 @@ gathering the result by assigning this accumulated sum to the \verb|C[i][j] = C[
 aspect is not simple yet basic. This is a common CUDA pattern, which needs to be understood correctly 
 \sout{(or at least know where to look for)}. So one should try to visualize the indexing process. The author always draws a sketch to visualize the indexing process on a piece of paper}.
 
-\begin{wrapfigure}{R}{0.5\textwidth}
-   \vspace{-0.9cm}
-   \begin{center}
-   \includegraphics[width=0.6\textwidth]{pngs/globalmatrix.png}
-   \end{center}
-   \vspace{-0.5cm}
-   \captionsetup{justification=raggedleft}
-   \caption{Scheme of 2D matrix multiplication, using Shared memory}
-   \label{global2d}
-\end{wrapfigure}
+
+
 
 \paragraph*{Shared memory} is one of the keys, to control the efficiency of a CUDA programming. 
 As we've mentionned several times before, the shared memory is only visible in block's scope. That means that 
@@ -807,6 +806,17 @@ demonstrating shared memory usage for matrix multiplication.
 Let's first discuss the general strategy. As we have discussed, the shared memory is much smaller in terms of size 
 than the global ones. So here, the main idea is to divide the \textit{big} matrices $A$ and $B$, that we're multiplying into smaller
 sub-matrices, which will be loaded into the shared memory later.
+
+\begin{figure}[h!]
+   \begin{center}
+   \includegraphics[width=0.6\textwidth]{pngs/globalmatrix.png}
+   \end{center}
+   \vspace{-0.5cm}
+   \captionsetup{justification=raggedleft}
+   \caption{Scheme of 2D matrix multiplication, using Shared memory}
+   \label{global2d}
+\end{figure}
+
 
 Let's look at the code describing this strategy:
 
@@ -899,7 +909,10 @@ with the scheme above.
    $(A_{row}=0, B_{col}=0)$, $(A_{row}=0, B_{col}=1)$, $(A_{row}=1, B_{col}=0)$ and $(A_{row}=1, B_{col}=1)$. These indices correspond to the 
    \textit{olive color} strips on the figure, labeled with BlockRow and BlockCol respectively.
    \item Then we're initializing the sub-matrix $C_{sub}$ - its dimensions, elements and stride(think about what 
-   could the stride mean). This sub-matrix $C_{sub}$ is illustrated in the figure \ref{global2d}. This gives us the ability to keep 
+   could the stride mean). This sub-matrix $C_{sub}$ is illustrated in the figure \ref{global2d}. 
+
+
+        This gives us the ability to keep 
    track of the sub-matrix within each block. Remember, the multiplication 
    of (sub-)matrices involves accumulation of element-wise multiplication, so we're initializing the temporary sum to $0$.
    \item The initialization is followed by the initialization of sub-id's. These are the thread id's \textbf{within a block}.
@@ -1045,7 +1058,7 @@ $\nicefrac{N}{4}$ additions. This algorithm looks like a log-scale complexity.
         \label{fig:dynamic}
     \end{subfigure}
 \label{fig:reduce}
-\caption{Static method for measuring the linear relation $\theta(m)$ and $\theta(l)$. The shear modulus is computed based on the linear fit.}
+    \caption{Reduce algorithm with differnet strategies.}
 \end{figure}
 
 \subsubsection*{Global memory reduce}
@@ -1054,6 +1067,7 @@ Once again, we're looking at a simplified version of the code, without implement
 (note that in this case, we use simple global mamory with \verb|cudaMalloc()|) The host and device functions are given by
 
 
+\begin{listing}
 \begin{minted}[frame=single, framesep=1mm]{cuda}
 __global__ void reduce_global_kernel(float *data_out,\
                float *data_in, int stride, int size) {
@@ -1072,6 +1086,8 @@ for (int stride = 1; stride < size; stride *= 2){
 
 //main()
 \end{minted}
+    \caption{Global memory reduction. \cite{tuomanen2018hands}}
+\end{listing}
 
 \begin{wrapfigure}{R}{0.45\textwidth}
    \vspace{-0.9cm}
@@ -1112,7 +1128,7 @@ way of analyzing the problem. However, it can be optimized using the block's sha
    \end{center}
    \vspace{-0.5cm}
    \captionsetup{justification=raggedleft}
-   \caption{}
+   \caption{Reduce algorithm using shared memory.}
    \label{fig:shared_reduce}
 \end{wrapfigure}
 
@@ -1128,7 +1144,10 @@ data pieces to each block (see figure).
 Now, let's try to understand it together in more detail, using well-defined numbers of threads and blocks, 
 to make things more illustrative. Trying to keep in mind both the illustration (\autoref{fig:shared_reduce}).
 
+\begin{listing}
 \inputminted[frame=single, framesep=1mm, linenos=true]{cuda}{cucodes/shared_rreduced.cu}
+\caption{Optimized reduce, with shared memory. \cite{tuomanen2018hands}}
+\end{listing}
 
 We omit the \verb|main()| function and the host/device memory allocation/copy.
 Line $2$ declares the function, which will be calling the kernel. Line $3$ copies memory 
@@ -1283,12 +1302,8 @@ By now, with the basic examples we've considered only \textit{basic} operations.
 This is a simple syncing mechanism, that ensures that all the threads within the block are 
 done before this barrier. This is block-level synchronization barrier.
 
-\subsection*{Cooperative groups}
-\begin{wrapfigure}{L}{0.67\textwidth}
-\begin{minipage}[l]{0.67\textwidth}
-    \vspace{-0.5cm}
 
-%\begin{listing}
+\begin{listing}
 \begin{minted}[frame=single, linenos=true]{cuda}
 __device__ int reduce_sum(
     cooperative_groups::thread_group gr, \
@@ -1307,13 +1322,10 @@ __device__ int reduce_sum(
 }
 \end{minted}
 \label{coop_group}
-%\end{listing}
     \caption{This method, is \sout{almost} the same as the first, optimized version of the reduce 
     algorithm, using the shared memory \autoref{}. Therefore, one must note that this reduce\_sum() method 
     must be called for the array temp*, located in the shared memory.}
-
-\end{minipage}
-\end{wrapfigure}
+\end{listing}
 
 
 Cooperative groups is a relatively new feature to the CUDA API.
@@ -1336,6 +1348,9 @@ always kept the notion of thread blocks in our mind, but never actually accessed
 thread block explicitly. A quoted "access", because we can actually manage synchronization of the thread blocks. Remember the legacy \verb|__syncthreads()| function. 
 Well, syncing the this\_thread\_block() does the same thing as the \verb|__syncthreads()|. Thus, there are several ways/semantics to synchronize the threads. 
 The following function calls are synonyms.
+
+
+\begin{listing}
 \begin{minted}[frame=single]{cuda}
     auto tb = this_thread_block(); // gets the thread block in kernel
     tb.sync() // same method as in cooperative_groups
@@ -1343,6 +1358,8 @@ The following function calls are synonyms.
     this_thread_block().synchronize();
     cooperative_groups::synchronize(this_thread_block());
 \end{minted}
+\end{listing}
+
 One can also mention other synonyms \verb|dim3 threadIdx| $\equiv$ \verb|dim3 thread_index()| and \verb|dim3 blockIdx| $\equiv$ \verb|dim3 group_index()|. Thus one can easily replace 
 these built-in keywords with these new methods, without any noticeable performance issues.
 
@@ -1384,10 +1401,7 @@ __global__ void parallel_kernel(float *x, int n)
 \end{minted}
 \caption*{}
 \label{deadlock}
-\end{listing}
 
-\vspace{-1.5cm}
-\begin{listing}[!ht]
 \begin{minted}[frame=single, framesep=1mm]{cuda}
 __device__ int sum(thread_block block, int *x, int n) 
 {   ...
@@ -1399,10 +1413,11 @@ __global__ void parallel_kernel(float *x, int n)
     sum(this_thread_block(), x, count); //OK
 }
 \end{minted}
-\caption*{}
+    \caption{Synchronizing using the legacy mechanism \textit{vs} using the cooperative groups. \cite{blog_2020}}
 \label{nodeadlock}
 \end{listing}
 
+\newpage
 In a nutshell, we clearly see a deadlock in the first piece of code, as 
 there are only threads with ID's less than the half of the block dimension, which will 
 enter the if condition. Those threads will perform their piece of code independently, 
@@ -1447,6 +1462,11 @@ some kind of hardcoded value}.
 
 Let's now briefly discuss the most used primitive functions.
 
+\paragraph{}\verb|__all_sync()|
+\paragraph{}\verb|__shfl_sync()|
+\paragraph{}\verb|__activemask()|
+
+\subsubsection*{Atomics}
 
 
 

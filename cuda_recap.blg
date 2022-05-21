@@ -1,0 +1,55 @@
+This is BibTeX, Version 0.99d (TeX Live 2021/Arch Linux)
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: cuda_recap.aux
+The style file: plainurl.bst
+Reallocated glb_str_ptr (elt_size=8) to 20 items from 10.
+Reallocated global_strs (elt_size=200001) to 20 items from 10.
+Reallocated glb_str_end (elt_size=8) to 20 items from 10.
+Reallocated singl_function (elt_size=8) to 100 items from 50.
+Reallocated singl_function (elt_size=8) to 100 items from 50.
+Database file #1: citation.bib
+Warning--to sort, need author or key in center
+Warning--to sort, need author or key in MemoryAlignment
+Warning--to sort, need author or key in blog_2020
+You've used 4 entries,
+            2882 wiz_defined-function locations,
+            642 strings with 5589 characters,
+and the built_in function-call counts, 1174 in all, are:
+= -- 108
+> -- 14
+< -- 0
++ -- 6
+- -- 2
+* -- 44
+:= -- 146
+add.period$ -- 9
+call.type$ -- 4
+change.case$ -- 12
+chr.to.int$ -- 0
+cite$ -- 7
+duplicate$ -- 39
+empty$ -- 160
+format.name$ -- 2
+if$ -- 343
+int.to.chr$ -- 0
+int.to.str$ -- 4
+missing$ -- 2
+newline$ -- 20
+num.names$ -- 2
+pop$ -- 54
+preamble$ -- 1
+purify$ -- 9
+quote$ -- 0
+skip$ -- 103
+stack$ -- 0
+substring$ -- 20
+swap$ -- 4
+text.length$ -- 0
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 14
+warning$ -- 3
+while$ -- 2
+width$ -- 5
+write$ -- 35
+(There were 3 warnings)
