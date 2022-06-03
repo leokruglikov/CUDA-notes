@@ -6,4 +6,6 @@
 *.out
 *.xml
 *.toc
-_minted-cuda_recap
+*.bbl
+*.toc
+_minted-cuda_recap/
