@@ -13,6 +13,12 @@ Cooperative groups: Flexible cuda thread programming, Aug 2020.
 Fang's notebook. nichijou.co, May 2022.
 \newblock URL: \url{https://nichijou.co/cudaRandom-memAlign/}.
 
+\bibitem{atomics}
+Brijendar~BakchodiaBrijendar Bakchodia1 and AmadanAmadan.
+\newblock What are atomic operations for newbies?, Apr 2018.
+\newblock URL:
+  \url{https://stackoverflow.com/questions/52196678/what-are-atomic-operations-for-newbies}.
+
 \bibitem{tuomanen2018hands}
 Brian Tuomanen.
 \newblock {\em Hands-On GPU Programming with Python and CUDA: Explore

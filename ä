@@ -1475,110 +1475,61 @@ will return an array of booleans, which will be used to access later the element
 So the result returned from the \verb|__activemask()| is used to call other synchronization functions, 
 to \textit{give them the corresponding threads, that are active in the warp}.
 So, for example, one could call the  \verb|__syncwarp(MASK)|, thus asking 
-to sync all the threads meeting the \verb|__activemask()| condition. 
-One can go to the NVidia's developer's guide \cite{center} and find the following:
+to sync all the threads meeting the \verb|\_\_activemask()| condition. 
+One can go to the NVidia's developer's guide \cite{center} and find the following
 
 \begin{quote}
-    \textsl{
 Returns a 32-bit integer mask of all currently active threads in the calling warp. 
-The Nth bit is set if the Nth lane in the warp is active when \_\_activemask() is called. 
+The Nth bit is set if the Nth lane in the warp is active when __activemask() is called. 
 Inactive threads are represented by 0 bits in the returned mask.
-    }
 \end{quote}
 
-So let's have a quick look and example at what did NVidia provide us with 
-\footnote{There are many such primitives available. As usual, the best way to get information about such 
-CUDA functionality, is to look it up in the NVidia's developer's guide \cite{center}.}
 
-\begin{itemize}
-    \item \verb|__shfl_sync()| or in previous CUDA versions \verb|__shfl()| is a tool, to "broadcast", or "spread"
-        a certain value from a certain thread (identified with its lane) to all others in the warp. For example, 
-        in a certain warp, all the threads have a variable \verb|int b = //some random int|, unique for all 
-        the threads. And I want all these thread's variable \verb|b|, to be the same as the one in the thread 
-        4 (its lane number or ID within the warp). The best way to do that is to use the provided function:
-        \verb|__shfl_sync(0xffffffff, b, 4)| (or \verb|__shfl(b,4)|). The second parameter is the variable to be 
-        broadcasted and the third one is the lane number to take the value from (because, of course, all the 
-        threads have this local variable \verb|b|, which is different for all of them). So we're replacing all the 
-        b's with THE b of the thread 4. The first parameter is actually the mask/filter, that tells the 
-        processor (or core I should say) which threads will be involved in this operation. This can be used 
-        by passing the result of e.g. \verb|__activemask()| function (there are multiple \textit{filtering} functions)
-        or by passing it the \textit{default} value in hex notation, which corresponds to the maximum number 
-        that can be displayed in binary notation (all the 32 bits are 1, thus we're saying that all the threads are active).
+\paragraph{}\verb|__shfl_sync()|
 
-    \item \verb|__shfl_up_sync()| or in previous CUDA versions \verb|__shfl_up()| is a function to 
-        shift the values of the warp by an offset. For instance, let's say that in the warp, I want 
-        the 4'rd thread to have the value from 0'th thread, the 5'th thread the value of the 1'st, the 6'th 
-        thread the value from the 2'nd thread, etc ... Then we would want to use the \verb|__shfl_up_sync()| 
-        function, with the same parameters as in the \verb|__shfl_sync()| function described above.
-    \item \verb|__shfl_down_sync()| Is the same idea as the \verb|__shfl_up_sync()|. The difference is that 
-        we would use it if we wanted e.g. the thread 29 to have the value 31. (see figure for better understanding).
-\end{itemize}
 
-These primitives come in various shapes and forms. It would take quite a time
-to discuss them all here. The idea for them all, however, follows quite well the 
-patterns, we've discussed just above. It is important to understand that these operations
-are sort of atomic, because, as we've seen, these are warp-local primitives, which is the most 
-fundamental part of the execution scheduling model.
+\paragraph{}\verb|__all_sync()|
+
 
 
 \subsubsection*{Atomics}
-When learning multithreaded programming, one of the first notions, that one must understand
-is the notion of atomics or atomic operations \footnote{Intuitively, 
-this comes from the word \textit{atom}. This is a greek word, meaning something 
-like \textit{uncuttable}, \textit{undivisible}. In fact, this is almost exactly, what an atomic operation corresponds to 
-\cite{atomics} .}
-. To make it short, these operations are operations, which, we are sure, will be performed \textit{in the smallest possible
-period} and nothing will be able to affect the execution of these operations.
-For example, in C++, there is a \verb|std::atomic<bool>| template specialization. 
-
-
-In the CUDA API, multiple atomic operations are provided. Arithmetic atomic operations, 
-such as \verb|atomicAdd()|, \verb|atomicSub()|, \verb|atomicMin()|, ... 
-,bitwise functions, such as \verb|atomicAnd()|, \verb|atomicXor()|, ...
-(for more: \cite{center}).
-All these operations have the same (or almost same) signatures: 
-\verb|int <or any primitive type> <function_name>(int* old_adress, int value)|
-So these functions take the old adress as the first parameter (for example, the address of the value, we want to add to) and 
-the value as the second. The function thus performs an arithmetic or logical operation atomically, 
-and stores the result in the old adress. It also returns the value.
-
-
-The atomic operations are however very expensive, as the scheduler must perform sequentialize the memory access. 
-It is thus very advisable to use these operations, only when needed.
-For example, let's say we've performed some kind of reduction on multiple blocks locally. 
-We know that if we've used some shared of memory on this reduction, one must in addition add the block results, to 
-get the full answer of our reduction. One way to do that is to force an atomic operation in all blocks, so they store it 
-in the first address of the global memory, that we will later \textit{consume} from the CPU. 
-So if one  suppose that we've accumulated the thread-local reduce into \verb|sum| and the pointer to the 
-initial data \verb|g_out|, we would do something like
-
-\begin{minted}[frame=single]{cuda}
-    if(this_thread_block().thread_rank()==0){
-        atomicAdd(&g_out[0], sum);
-    }
-\end{minted}
-
-
-\section{Streams}
 
 
 
 
 
+
+
+
+
+
+
+
+%mention optimization for https://developer.nvidia.com/blog/cuda-pro-tip-increase-performance-with-vectorized-memory-access/
+
+%\subsection{Atomics}
+%
+%
+%
+%
+%
+%%[https://developer.nvidia.com/blog/cooperative-groups/].
+%
+%
+%
+%\subsection{Thread block synchronization}
+%
+%\section{Streams}
+%
 %\section{Optimization}
 %\begin{enumerate}
 %    \item grid strided loop (for matrix multiplication, for saxpy, etc)%https://developer.nvidia.com/blog/cuda-pro-tip-increase-performance-with-vectorized-memory-access/
-%   \item pragma unroll
-%   \item builtin_assume_alligned()
+%    \item
 %\end{enumerate}
 %
-
 %\section{Minimal developpers tools}
 %\begin{itemize}
 %   \item cuda timer
-%   \item errors
-%   \item debugger
-%   \item nvprof
 %\end{itemize}
 %
 
@@ -1590,10 +1541,28 @@ knowledge of binary number representation, we can verify that \verb|if( (id_x%(s
 equivalent to \verb|if( (id_x&(stride*2 -1) ) == 0)|. It would impossible for me to come up with this small 
 optimization on my own. Maybe for CS majors, it is evident.
 
-\newpage
+%\begin{listing}[!ht]
+%\begin{minted}[frame=single, linenos=true]{zsh}
+%CUDACODE
+%\end{minted}
+%\vspace{-0.7cm}
+%\caption{Compiling with nvcc and launching a CUDA program on Linux}
+%\label{nvcc_cuda}
+%\end{listing}
+%
+%
+%\begin{enumerate}
+%   \item description of cases, when pitch allocation is useful.
+%   \item pinned and pageable memory
+%\item \_\_align\_\_
+%\item error hadling basics   
+%
+%\end{enumerate}
+%
+%\printbibliography
 \bibliography{citation}
 \bibliographystyle{plainurl}
 
+%
 
 \end{document}
-
