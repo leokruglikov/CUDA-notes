@@ -109,25 +109,30 @@
 
 \newpage
 \section*{Author's preword}
-These \textit{notes} are a kind of a collection of different articles from diverse resources on this topic. A big part of code snippets 
-are also taken from different resources, and has not always been tested. The author will do its best to try to cite the sources. 
+\label{disclaimer}
+These \textit{notes} are a kind of a collection of different articles from diverse resources on this topic. More precisely, the authors interpretation 
+of these. A big part of the code snippets 
+are also taken from different resources, 
+and has not always been tested. The author will do its best to try to cite the sources. 
 Therefore it is really a \textit{collage} of notes, articles, books on the CUDA programming.
+The author's main goal is to provide the most detailed possible explanation of 
+various code snippets and descriptions.
 
 Note that this document was initially written for the author itself, who is a physics major 
 and is a fully self-taught guy in programming. 
 For the author, it was a way of learning the topic and memorize 
-The important concepts. 
+the important concepts. 
 
 The goal of these notes is to \textbf{give us a good basic understanding of the 
 GPU architecture, and \underline{the most important,}, to try to fully depict
-the most common examples of CUDA code.} 
+the most common examples of CUDA codes.} 
 
 \section*{Dictionary}
 \label{section:dictionary}
 \begin{itemize}
    \setlength\itemsep{-0.5em}
    \item GPU - Graphics Processing Unit
-   \item CUDA - Compute Unified Device Architecture. The language we use to \textit{talk to the GPU}. 
+   \item CUDA - Compute Unified Device Architecture. The language we use to \textit{talk to the GPU}. I will often refer to it as the CUDA API. 
    \item Device - the GPU, from the software viewpoint. You may think of the notion of the 
    device as an external kind of executor, in our case, the GPU.
    \item Host - the CPU, from the software viewpoint. The \textit{machine}, that will launch the GPU from a
@@ -145,10 +150,10 @@ API's developed. The biggest ones are the Khronos Group's OpenCL, Microsoft's Di
 discussed here, the Nvidia's Compute Unified Device Architecture, or shortly - CUDA.
 
 
-When discussing the necessity of the GPU for computations, many come up with the example of the car and the bus. 
+When discussing the necessity of the GPU for computations, many come up with the example of the car and the bus \cite{habr_car_vs_bus}. 
 Suppose you need to transport people from a point $A$ to a point $B$. To solve this problem, you are 
 given a car and a bus. What would be the most optimized way to transport these people? We introduce here
-the notion of throughput and latency. The ability to perform a certain number of operations in a certain period of 
+the notion of throughput (bandwith) and latency. The ability to perform a certain number of operations in a certain period of 
 time is the throughput, and the amount of time that is required to perform a single operation is the latency.
 In our analogy, the bus, having a smaller speed than the car, but a greater capacity, has a big latency but 
 a big throughput. On the other hand, the car has a small latency and small throughput.
@@ -160,12 +165,14 @@ one should use the car, to get the small group of people faster to the point $B$
 In this analogy, the car is the CPU, and the bus is the GPU.
 
 I am convinced that after some examples of code using CUDA, the reader will understand, how powerful
-actually the GPGPU model is for certain tasks. Like in our example with the bus and the car.
+actually the GPGPU model is for certain tasks acomplishment. Like in our example with the bus and the car.
 
 \section{Basics of Architecture}
 
 Before starting to consider some \verb|C/C++| CUDA code examples, we will look into some architecture of the GPU. 
-Indeed, one of the differences between CUDA (or GPU) programming, is that one must take into account
+Indeed, one of the differences between CUDA (or GPU) and usual/sequential programming (in our understanding, the
+\textit{usual} programming is the code we write in C, Java, Python, etc...), 
+is that one must take into account
 the architecture of the GPU, while writing even some simple code. The GPU has a multithread architecture by default, 
 so when the programmer is partitioning the parallel tasks, he must make sure that there is no any redundant
 operations, and think about the way the cores will execute these tasks. If this partitioning takes into consideration all necessary aspects of the architecture and memory, it is possible to archive significant performance improvments.
@@ -179,7 +186,7 @@ are much less powerful than the actual CPU (\autoref{cpuvsgpu}).
    \centering
    \includegraphics[scale=0.4]{pngs/cpuvsgpu.png}
    \caption{Schematic difference in architecture between the CPU and the GPU. Without going into details 
-   (\sout{as mentionned in the disclaimer, the author have not studied it in depth}), one may be able to see that 
+   (\sout{as mentionned in the disclaimer, the author have not studied it in depth}), one are able to see that 
    the GPU has many smaller ALU's. They are less powerful than those of the CPU and don't stand a chance in 
     a theoretical \textit{1v1 battle}, but may do enough \textit{damage}, when working together.\cite{tuomanen2018hands}}
    \label{cpuvsgpu}
@@ -196,7 +203,7 @@ The goal is not to give a detailed description of the GPU architecture, but rath
 idea of the CUDA mapping between the hardware and software world. While launching a kernel on the device, 
 every mentionned part will be assigned a certain role, and will treat the software abstractions accordingly.
 
-For the programmer, we will consider the abstraction that maps the hardware side to the software side of the program. 
+For us, the programmers, we will consider the abstraction that maps the hardware side to the software side of the program. 
 
 \vspace{-15pt}
 \paragraph{\underline{Threads}} are fundamental units of any GPU program. It is the most primitive \textit{executor} of a function 
@@ -225,7 +232,7 @@ is the grouping entity that encapsulates blocks. We are thus considering that we
 the grid on the \textbf{device}.
 \begin{quote}
    \centering
-   Grid $\xrightarrow[]{\text{contains}}$ Blocks $\xrightarrow[]{\text{constains}}$ Threads
+    (Device$\xrightarrow[]{contains}$)Grid $\xrightarrow[]{\text{contains}}$ Blocks $\xrightarrow[]{\text{constains}}$ Threads
 \end{quote}
 
 \vspace{-18pt}
@@ -242,7 +249,7 @@ sketch of the hardware/software mapping.
    \label{abstraction}
 \end{wrapfigure}
 The abstraction between the hardware and the software side of CUDA is shown \autoref{abstraction}. Once the function 
-is given, the programmer should think of the execution pipeline through threads, blocks, and the grid.
+is provided, the programmer should think of the execution pipeline through threads, blocks, and the grid.
 
 \clearpage
 \newpage
@@ -254,11 +261,13 @@ Thread blocks run concurrently with each other grouped into a grid. It is import
 the SM's will \textit{automatically} assign the block's execution based on the GPU resources. One may say that 
 \textsl{
 there is no promise on the block's concurrent execution.
-}
+}. So we do not know the order in which the blocks will be run.
 
 
-However, there is a notion, which more or less guarantees the execution of threads. The Streaming Multiprocessor
-treats threads in groups of 32, which are called \underline{warps}. Think of it as a way to handle rather than 
+However, there is a notion, which more or less guarantees the order of the execution of threads. 
+The Streaming Multiprocessor
+treats threads in groups of 32, which are called \underline{warps}. Think of the warps as a way to handle 
+the threads, rather than 
 a way of grouping (as the blocks of threads) \footnote{In the AMD terminology, a warp is reffered to as the 
 \underline{wavefront}. It brings more insight into the nature of warps}.
 
@@ -315,32 +324,36 @@ to manipulate.
 
 \vspace{-15pt}
 \paragraph{\underline{Shared memory}} \label{grocery_store} is much faster than the global one, but evidently smaller. Other 
-crucial difference is that shared memory is \textbf{only seen by threads in the same block}. This provides 
+crucial difference is the scope - the shared memory is \textbf{only seen by threads in the same block}. This provides 
 the ability for threads to share results and temporary calculations, and process the data \textsc{in place}. 
-Think of this situation as a client of a grocery store. The customers are sort of threads. Every time a person 
+Think of this situation as a client of a grocery store, where the customers are sort of threads. Every time a person 
 wants to cook something at their house, they don't drive to the store to buy every ingredient. They rather go there 
-once a week, for example, and buy the amount they need and such that all can fit in the fridge. Thus 
+once a week, for example, and buy the amount they need. They also make sure, 
+that everything can fit in the fridge. Thus 
 in this \sout{wonderful} analogy, the fridge is the low latency shared memory, and the grocery shop - the 
 big and unwieldy global resource.
 One sometimes refer to this memory as 
 \textsl{cache memory controlled by the programmer}. However, it is important to take note that the reduced 
 latency of the shared memory does not guarantee a better performance. Indeed, the biggest pitfall for all \sout{of us} beginners 
-are the \textit{bank conflicts}\footnote{A small disclaimer: the notion of \textit{bank conflicts} was the reason for this personal 
-document. The reader should not panic if he's missing something. The examples will be discussed later in the practice part. So one 
+are the \textit{bank conflicts}\footnote{A small disclaimer: the notion of \textit{bank conflicts} was one of the reasons for these personal 
+notes. The reader should not panic if he's missing something. The examples will be discussed later in the practice part. So one 
 should, if necessary, come back to this "theoretical" part after going through the examples. \sout{The author wants to apologize 
 for the eventual wordiness.}}. 
 
 \paragraph{Bank conflicts.}We already discussed the notion of warps, as an execution entity encapsulating threads. 
-One may think of the \underline{bank conflicts} as the analogy of warps in memory. Shared memory is organized into \underline{banks}.
+One may think of the \underline{bank conflicts} as the analogy of warps in memory
+ (i.e. warps are located at the \textit{execution level abstraction}, and the 
+ bank conflicts-at the \textit{memory level abstraction}). 
+ Shared memory is organized into \underline{banks}.
 One \textit{layer bank} is a sequential field of 32 memory adreses of 4 bits ($32\text{\#adreses}\cdot 4\text{bits}$). 
 
 \begin{quote}
    \textsl{Memory can serve as many simultaneous address as it has banks.} 
 \end{quote}
 This is a very important property, so lest's consider an another \sout{illustrative} analogy. Suppose in a restaurant, each waiter 
-is assigned a strict number of tables, such that a waiter $A$ cannot take $B$'s tables. Suppose you are a host at this restaurant, 
-and you have a large group of the exact number as the resaurant's seats, that are willing to dine. The wise choice would be to 
-partition them between all the waiters at their tables, right? Wouldn't that be silly to partition all the guests, excepting one, 
+is assigned a strict number of tables, such that a waiter $A$ cannot take $B$'s tables. Suppose you are the host at this restaurant, 
+and you have a large group of people, who's number is the exact number as the resaurant's seats. The wise choice would be to 
+partition them between all the waiter's assigned tables, right? Wouldn't that be silly to partition all the guests, excepting one, 
 who will be waiting for a free place at $A$'s waiter's table, while there are free places at $B$'s table? The analogy \sout{may} not be 
 the best, but the sketch should do the trick: 
 
@@ -354,23 +367,25 @@ the best, but the sketch should do the trick:
 \end{figure}
 
 \vspace{-0.5cm}
-\paragraph{Read-only memory$\ast$} is, as its name suggests, can't be changed by the kernel's threads. This memory is not as common 
-in GPGPU programming. It is often encapsulated in GPU API's, such as OpenGL. Thus by using those API's, the programming is indirectly 
-operating with the read-only memory. The texture memory is also known as the texture memory.
+\paragraph{Read-only memory$\ast$} is, as its name suggests, can't be changed by the kernel's threads, but is loaded at compile time. This memory is not as commonly 
+described in the GPGPU programming documentation. It is often 
+encapsulated in the GPU APIs, such as OpenGL. Thus by using those API's, the programming is indirectly 
+reffered as the read-only memory.
 
-\paragraph{Local registers}. By looking at the scheme of the architecture of the GPU vs the CPU \autoref{cpuvsgpu}, one may notice the amount 
-of registers in the GPU vs the CPU. Indeed, it is normal due to the number of threads in the GPU. As you might have guessed, a 
+\paragraph{Local registers}By looking at the scheme of the architecture of the GPU vs the CPU (\autoref{cpuvsgpu}), one may notice the amount 
+of registers in the GPU vs the CPU. The amount of registers in the GPU
+is incomprarble with the registers of the CPU. As you might have guessed, a 
 register is memory, with the scope of a thread. The compiler of a CUDA program will try to optimize the number and size of registers. 
 It is nevertheless possible, that the amount of memory in registers may fall short. Then the L1 and/or L2 caches will enter the 
 play.
 
-\subsection{Memor allocation model}
+\subsection{Memory allocation model}
 By now, we've made the difference between kinds of memory in terms of the scope, i.e, 
-who is able to access/read certain memory. This of course impacts the way we're allocating it. 
-In terms of the memory \textbf{allocation}, there are mainly fours ways of allocation, which reffers 
+who is able to access/read certain memory. This, of course, impacts the way we're allocating it. 
+In terms of the memory \textbf{allocation}. There are mainly fours ways of allocation, which refers 
 to the global device memory. 
-We will see further that a usual 
-code, which uses GPU resources, follows a certain path. One of the steps is the allocation of 
+We will see further that a usual
+code, which uses GPU resources, follows a certain path/pipeline. One of the steps is the allocation of 
 memory on the GPU from the host (by calling a certain CUDA function). 
 \begin{itemize}
    \item Pageable memory
@@ -378,18 +393,18 @@ memory on the GPU from the host (by calling a certain CUDA function).
    \item Mapped memory
    \item Unified memory
 \end{itemize}
-I will mention the difference in these further.
+The differece betweem these will be mentioned further.
 
 
 \section{Programming in CUDA}
 
 \paragraph{} By now, we have talked about the architecture of the GPU \footnote{Mainly about the Nvidia's architecture, but it 
 can be quite well generalized to other GPU's.} by briefly discussing different notions - 
-the execution model of threads and kinds of memory. Now, we will try to look at examples of CUDA codes. We will mainly refer to 
+the execution model of threads and kinds of memory. Now, we will try to look at examples of CUDA codes. We will try to refer to 
 all these concepts in order to get a more detailed understanding. One will maybe need to refer to the section above 
 to link the theory with a bit of practice. I will do my best to choose the most illustrative examples to explain specific concepts, 
 as well as introducing with some tools. 
-Also note that I use Linux (\autoref{Disclaimer}).
+Also note that I use Linux (\autoref{disclaimer}).
 
 \subsection{Setup}
 Before starting writing some code, we must install the necessary packages and libraries. Every computer and operating system 
@@ -1560,6 +1575,7 @@ initial data \verb|g_out|, we would do something like
 
 
 \section{Streams}
+\subsection{Concept of streams}
 CUDA streams is an another fundamental concept that we've used previously in an implicit manner.
 Indeed, let me provide an another example using C++: when a "Hello World" programm is written in C++, 
 no one cares about the thread usage. We do not create a "main" thead, when printing a character to 
@@ -1569,12 +1585,16 @@ The stream concept is more of a thread \textbf{over the GPU threads}.
 By now, all the programs we've considered were launched in one single CUDA stream. So one can launch a 
 programm (e.g. a simple vector addition) in one stream, which will be performed in parallel. However one can 
 add a second vector addition programm, which will be done in parallel, with the first vector addition.
-\subsection{Concept of streams}
+
+
+
 A CUDA stream is thus a way to make two (or more) kernels run in parallel. (Remember that the kernels 
 themselves are already run in parallel following the CUDA architecture). By now, we've used one implicit stream - the default stream.
+
+\subsection{Basic usage of streams}
 Let's try to explicitly create a stream and look at its initialization syntax:
 
-\begin{listing}
+\begin{listing}[ht!]
 \begin{minted}[frame=single]{cuda}
     cudaStream_t stream;
     cudaStreamCreate(&stream);
@@ -1609,7 +1629,7 @@ The detailed sketch and the comments will be listed below (as usual the author t
 from multiple sources \cite{center}). For now, let's simply invoke the 
 functions needed for this operation. 
 
-\begin{listing}
+\begin{listing}[ht!]
 \begin{minted}[frame=single]{cuda}
 
 cudaStream_t steam;
@@ -1635,6 +1655,24 @@ The asynchronous memory copy may not seem very useful in this specific example,
 as we're only performing one memory copy. However this is useful, when multiple kernels are called, and multiple 
 host to device allocations are needed. In this case, one copy operation will be assigned to every stream.
 
+\subsection{Callbacks}
+The CUDA streams are often needed to be synchronized. With the 
+CUDA callback functions, one can create an action that the stream will 
+do once it has performed all the operations that were assigned to it.
+This is done by creating a callback function and assigning it to a certain 
+stream, or multiple streams.
+In order to declare a CUDA callback funtion, the \verb|CUDART_CB| 
+datatype must be invoked. The \verb|cudaStreamAddCallback()| adds the function
+to the stream.
+
+An another interesting option for optimization and organizing the host-device 
+interoperability are the host function calls from the stream. This can 
+be done with the \verb|cudaLaunchHostFunc()| function. So one can 
+call a function and assign it to the CPU, from the stream, which is a 
+CUDA API member. I won't go into the details, neither of the callback usage,
+nor of the syntax and signatures of these functions.
+The examples can be found online and in the different sources provided in 
+the bibliography.
 
 
 
@@ -1666,6 +1704,32 @@ by something much easier for the GPU architecture to execute. In this case, with
 knowledge of binary number representation, we can verify that \verb|if( (id_x%(stride*2) ) == 0)| is 
 equivalent to \verb|if( (id_x&(stride*2 -1) ) == 0)|. It would impossible for me to come up with this small 
 optimization on my own. Maybe for CS majors, it is evident.
+
+\subsection*{Asynchronous memory allocation}
+
+The code sketch is a more detailed and relevant use-case of the 
+asynchronous memory transfer. The actual necessity of this process in understood 
+when it is visualized in the NVIDIA Profiler. Here one can see that 
+all the stream's operations are overlapped, thus keeping it more busy than usual.
+This optimize the GPU resource utilization and execution time and upgrades the
+bandwidth of the programm \ref{appendix_async}. What happens if 
+the fucntion \verb|cudaStreamSynchronize()| is called at every loop iteration,
+for every stream. Then all this \textit{asynchronous} mechanism looses it's
+goal. Indeed, if this is the case, then every stream will wait for the previous
+stream to be done. There is thus no more asynchronous operations.
+
+\begin{listing}
+\inputminted[linenos=true, frame=single]{cuda}{cucodes/asyncmem.cu}
+    \label{appendix_async}
+\end{listing}
+
+
+
+
+
+
+
+
 
 \newpage
 \bibliography{citation}

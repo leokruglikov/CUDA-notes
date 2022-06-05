@@ -1,21 +1,21 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.23 (TeX Live 2021/Arch Linux) (preloaded format=pdflatex 2022.4.7)  13 APR 2022 08:17
+This is pdfTeX, Version 3.141592653-2.6-1.40.24 (TeX Live 2022/Arch Linux) (preloaded format=pdflatex 2022.5.29)  8 JUL 2022 14:42
 entering extended mode
  \write18 enabled.
  %&-line parsing enabled.
-**cuda_recap.tex
+**
 
 ! Emergency stop.
-<*> cuda_recap.tex
-                  
+<*> 
+    
 End of file on the terminal!
 
  
 Here is how much of TeX's memory you used:
- 3 strings out of 478276
- 117 string characters out of 5853014
- 289381 words of memory out of 5000000
- 18313 multiletter control sequences out of 15000+600000
+ 3 strings out of 478238
+ 117 string characters out of 5850456
+ 289994 words of memory out of 5000000
+ 18344 multiletter control sequences out of 15000+600000
  469259 words of font info for 28 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 0i,0n,0p,17b,6s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 0i,0n,0p,1b,6s stack positions out of 5000i,500n,10000p,200000b,80000s
 !  ==> Fatal error occurred, no output PDF file produced!

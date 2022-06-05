@@ -8,48 +8,49 @@ Reallocated glb_str_end (elt_size=8) to 20 items from 10.
 Reallocated singl_function (elt_size=8) to 100 items from 50.
 Reallocated singl_function (elt_size=8) to 100 items from 50.
 Database file #1: citation.bib
+Warning--to sort, need author or key in habr_car_vs_bus
 Warning--to sort, need author or key in center
 Warning--to sort, need author or key in MemoryAlignment
 Warning--to sort, need author or key in blog_2020
-You've used 5 entries,
+You've used 6 entries,
             2882 wiz_defined-function locations,
-            648 strings with 5791 characters,
-and the built_in function-call counts, 1541 in all, are:
-= -- 144
-> -- 28
+            653 strings with 5926 characters,
+and the built_in function-call counts, 1818 in all, are:
+= -- 171
+> -- 30
 < -- 0
-+ -- 11
++ -- 12
 - -- 6
-* -- 60
-:= -- 194
-add.period$ -- 12
-call.type$ -- 5
-change.case$ -- 17
+* -- 72
+:= -- 218
+add.period$ -- 14
+call.type$ -- 6
+change.case$ -- 20
 chr.to.int$ -- 0
-cite$ -- 8
-duplicate$ -- 48
-empty$ -- 201
+cite$ -- 10
+duplicate$ -- 57
+empty$ -- 242
 format.name$ -- 6
-if$ -- 444
+if$ -- 530
 int.to.chr$ -- 0
-int.to.str$ -- 5
+int.to.str$ -- 6
 missing$ -- 2
-newline$ -- 25
+newline$ -- 29
 num.names$ -- 4
-pop$ -- 69
+pop$ -- 83
 preamble$ -- 1
-purify$ -- 13
+purify$ -- 15
 quote$ -- 0
-skip$ -- 132
+skip$ -- 158
 stack$ -- 0
-substring$ -- 25
-swap$ -- 5
+substring$ -- 30
+swap$ -- 6
 text.length$ -- 0
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 18
-warning$ -- 3
+type$ -- 22
+warning$ -- 4
 while$ -- 4
-width$ -- 6
-write$ -- 45
-(There were 3 warnings)
+width$ -- 7
+write$ -- 53
+(There were 4 warnings)
