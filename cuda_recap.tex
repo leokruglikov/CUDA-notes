@@ -1560,6 +1560,77 @@ initial data \verb|g_out|, we would do something like
 
 
 \section{Streams}
+CUDA streams is an another fundamental concept that we've used previously in an implicit manner.
+Indeed, let me provide an another example using C++: when a "Hello World" programm is written in C++, 
+no one cares about the thread usage. We do not create a "main" thead, when printing a character to 
+the standart output. In the context of the CUDA API, \textbf{any} programm is by definition multithreaded. 
+Therefore the analogy between the \textit{usual} C/C++/Python/... and a GPU programm does not make sense.
+The stream concept is more of a thread \textbf{over the GPU threads}. 
+By now, all the programs we've considered were launched in one single CUDA stream. So one can launch a 
+programm (e.g. a simple vector addition) in one stream, which will be performed in parallel. However one can 
+add a second vector addition programm, which will be done in parallel, with the first vector addition.
+\subsection{Concept of streams}
+A CUDA stream is thus a way to make two (or more) kernels run in parallel. (Remember that the kernels 
+themselves are already run in parallel following the CUDA architecture). By now, we've used one implicit stream - the default stream.
+Let's try to explicitly create a stream and look at its initialization syntax:
+\begin{minted}[frame=single]{cuda}
+    cudaStream_t stream;
+    cudaStreamCreate(&stream);
+    foo_kernel<<< grid_size, block_size, 0, stream>>>();
+    cudaStreamDestroy(stream);
+\end{minted}
+
+Therefore to create the CUDA stream, one must first initialize the stream, then create the stream, i.e. 
+allocate the memory via the \verb|cudaStreamCreate()| method by passing the pointer of the stream. 
+In order to call the kernel and make it run in a particular stream, one pass it as the last parameter in the angle brackets.
+If nothing is passed in the in the angle brackets for the stream, the default stream is used.
+
+The simplest usage example of cuda streams is when one would want to concecutively call a certain kernel multiple times 
+(for example N times). 
+the way to do it using the default stream is to simply loop N times and call the kernel at every iteration.
+The way to do it using streams, is to create an array of streams and call the kernel by assigning it to different streams.
+The kernels will then be run in parallel without waiting the previous kernel return. The execition of the kernels 
+are thus independent within the GPU. 
+
+The CUDA streams are also able to be synchronized between each other. 
+The call of the \verb|cudaStreamSynchronize()| function which takes a stream as a parameter will wait for the stream to be done.
+
+We've seen that before every kernel execution one needs to transfer data between the host and the device and vice-versa. 
+We've also seen that this operation may take a significant amount of time, compared to the kernel execution time. 
+This time impact can be reduced with streams, by distributing this load between different CUDA streams. 
+This is how we will introduce the concept of asynchronous memory allocation, widely used in the CUDA code development.
+This will also introduce the practical concept of the pinned memory allocation/data transfer, 
+theoretically discussed previously \ref{mem_alloc}. This implements the data transfer between host-device and device-host
+within a user-created stream.
+The detailed sketch and the comments will be listed below (as usual the author takes the code
+from multiple sources \cite{center}). For now, let's simply invoke the 
+functions needed for this operation. 
+
+\begin{minted}[frame=single]{cuda}
+
+cudaStream_t steam;
+cudaStreamCreate(&stream);
+cudaMallocHost(h_ptr, BYTE_SIZE);
+cudaMalloc((void**)&d_ptr, BYTE_SIZE);
+
+//transfer data from host to device asynchronously,
+//by using streams and the async. memory copy
+cudaMemcpyAsync(d_ptr, h_ptr, BYTE_SIZE, cudaMemcpyHostToDevice, stream);
+
+/*execute the kernel and other necessary operations*/
+
+//copy the data back to the host
+cudaMemcpyAsync(h_ptr, d_ptr, BYTE_SIZE, cudaMemcpyDeviceToHost, stream):
+
+/*destroy stream, free memory, etc...*/
+
+\end{minted}
+
+The asynchronous memory copy may not seem very useful in this specific example,
+as we're only performing one memory copy. However this is useful, when multiple kernels are called, and multiple 
+host to device allocations are needed. In this case, one copy operation will be assigned to every stream.
+
+
 
 
 
@@ -1579,6 +1650,7 @@ initial data \verb|g_out|, we would do something like
 %   \item errors
 %   \item debugger
 %   \item nvprof
+%   \item oop in cuda - https://stackoverflow.com/questions/13630817/cuda-version-not-working-while-serial-working/13652988#13652988
 %\end{itemize}
 %
 

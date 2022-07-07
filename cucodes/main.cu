@@ -1,16 +1,12 @@
 #include <iostream>
 
 #define N_THREADS 3
-#define N_BLOCKS 2147483647 
+#define N_BLOCKS 512 
 
 __global__ 
 void hi_from_gpu(){
-    while (true)
-    {
-        /* code */
-    }
     
-    //printf("Hi from GPU, from thread id %d and block id %d \n", threadIdx.x, blockIdx.x);
+    printf("Hi from GPU, from thread id %d and block id %d \n", threadIdx.x, blockIdx.x);
 }
 
 int main(){

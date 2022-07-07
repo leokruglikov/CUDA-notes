@@ -1,0 +1,17 @@
+
+cudaStream_t steam;
+cudaStreamCreate(&stream);
+cudaMallocHost(h_ptr, BYTE_SIZE);
+cudaMalloc((void**)&d_ptr, BYTE_SIZE);
+
+//transfer data from host to device asynchronously,
+//by using streams and the async. memory copy
+cudaMemcpyAsync(d_ptr, h_ptr, BYTE_SIZE, cudaMemcpyHostToDevice, stream);
+
+/*execute the kernel and other necessary operations*/
+
+//copy the data back to the host
+cudaMemcpyAsync(h_ptr, d_ptr, BYTE_SIZE, cudaMemcpyDeviceToHost, stream):
+
+/*destroy stream, free memory, etc...*/
+
