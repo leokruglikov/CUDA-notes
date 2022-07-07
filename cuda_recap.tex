@@ -1573,12 +1573,15 @@ add a second vector addition programm, which will be done in parallel, with the 
 A CUDA stream is thus a way to make two (or more) kernels run in parallel. (Remember that the kernels 
 themselves are already run in parallel following the CUDA architecture). By now, we've used one implicit stream - the default stream.
 Let's try to explicitly create a stream and look at its initialization syntax:
+
+\begin{listing}
 \begin{minted}[frame=single]{cuda}
     cudaStream_t stream;
     cudaStreamCreate(&stream);
     foo_kernel<<< grid_size, block_size, 0, stream>>>();
     cudaStreamDestroy(stream);
 \end{minted}
+\end{listing}
 
 Therefore to create the CUDA stream, one must first initialize the stream, then create the stream, i.e. 
 allocate the memory via the \verb|cudaStreamCreate()| method by passing the pointer of the stream. 
@@ -1606,6 +1609,7 @@ The detailed sketch and the comments will be listed below (as usual the author t
 from multiple sources \cite{center}). For now, let's simply invoke the 
 functions needed for this operation. 
 
+\begin{listing}
 \begin{minted}[frame=single]{cuda}
 
 cudaStream_t steam;
@@ -1625,6 +1629,7 @@ cudaMemcpyAsync(h_ptr, d_ptr, BYTE_SIZE, cudaMemcpyDeviceToHost, stream):
 /*destroy stream, free memory, etc...*/
 
 \end{minted}
+\end{listing}
 
 The asynchronous memory copy may not seem very useful in this specific example,
 as we're only performing one memory copy. However this is useful, when multiple kernels are called, and multiple 
