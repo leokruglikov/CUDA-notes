@@ -5,7 +5,7 @@ Before starting to consider some \verb|C/C++| CUDA code examples, we will look i
 Indeed, one of the differences between CUDA (or GPU) and usual/sequential programming (in our understanding, the
 \textit{usual} programming is the code we write in C, Java, Python, etc...), 
 is that one must take into account
-the architecture of the GPU, while writing even some simple code. The GPU has a multithread architecture by default, 
+the architecture of the GPU, even when writing some simple code. The GPU has a multithread architecture by default, 
 so when the programmer is partitioning the parallel tasks, he must make sure that there is no any redundant
 operations, and think about the way the cores will execute these tasks. If this partitioning takes into consideration all necessary aspects of the architecture and memory, it is possible to archive significant performance improvments.
 
@@ -18,7 +18,7 @@ are much less powerful than the actual CPU (\autoref{cpuvsgpu}).
    \centering
    \includegraphics[scale=0.4]{pngs/cpuvsgpu.png}
    \caption{Schematic difference in architecture between the CPU and the GPU. Without going into details 
-   (\sout{as mentionned in the disclaimer, the author have not studied it in depth}), one are able to see that 
+   (\sout{as mentionned in the disclaimer, the author have not studied it in full depth}), one is able to see that 
    the GPU has many smaller ALU's. They are less powerful than those of the CPU and don't stand a chance in 
     a theoretical \textit{1v1 battle}, but may do enough \textit{damage}, when working together.\cite{tuomanen2018hands}}
    \label{cpuvsgpu}
@@ -26,7 +26,7 @@ are much less powerful than the actual CPU (\autoref{cpuvsgpu}).
 
 \subsection{Execution abstraction}
 As you might have noticed, the GPU is by definition a multi-threaded device. This means, it is suitable for the so called 
-Single Instruction Multiple Threads or SIMT (remember the bus and car analogy).
+SIMT or SIMD (remember the bus and car analogy).
 
 
 From the hardware viewpoint, we are distinguishing the \textbf{Device (GPU)} itself, the \textbf{Streaming Multiprocessors (SM's)}
@@ -35,7 +35,8 @@ The goal is not to give a detailed description of the GPU architecture, but rath
 idea of the CUDA mapping between the hardware and software world. While launching a kernel on the device, 
 every mentionned part will be assigned a certain role, and will treat the software abstractions accordingly.
 
-For us, the programmers, we will consider the abstraction that maps the hardware side to the software side of the program. 
+For us, programmers, we are writing software, and are operating with software abstractions. However, we still need to know 
+how are these abstractions mapped onto the \textit{hardware world}.
 
 \vspace{-15pt}
 \paragraph{\underline{Threads}} are fundamental units of any GPU program. It is the most primitive \textit{executor} of a function 
@@ -43,7 +44,7 @@ launched on the GPU. Threads (from the software side) are executed on the \textb
 
 \vspace{-15pt}
 \paragraph{\underline{Blocks}} \label{blocks} are grouping entities that enclose threads. When a function is asked to run on the GPU, the 
-blocks are delegated to the corresponding \textbf{Streaming Multiprocessor} or \textbf{SM}.
+blocks, which \textit{contain} threads are delegated to the corresponding \textbf{Streaming Multiprocessor} or \textbf{SM}.
 So by now, we get that 
 
 \begin{quote}
@@ -57,6 +58,10 @@ launched 8 blocks of lets say 32 threads each. Suppose our GPU has 2 SM's. Then,
 the blocks are divided and delegated to SM's. Thus for a GPU with 2 SM's, each SM will contain 
 $\nicefrac{8\text{blocks}}{2\text{SM's}} = 4 \text{blocks}$, but if our GPU has 4 SM's, 
 each SM will contain $\nicefrac{8\text{blocks}}{4\text{threads}} = 2 \text{blocks}$.
+
+Note that from the programmer's viewpoint, the threads are strictly partitioned in blocks. 
+From the hardware's viewpoint, however, it is not said, that threads \textit{are physically divided into blocks}. 
+This is the exact reason, we are discussing about \textit{two worlds} and their mappngs.
 
 \vspace{-15pt}
 \paragraph{\underline{Grid}} is the top-level abstraction layer from the software's perspective. The grid
@@ -93,19 +98,22 @@ Thread blocks run concurrently with each other grouped into a grid. It is import
 the SM's will \textit{automatically} assign the block's execution based on the GPU resources. One may say that 
 \textsl{
 there is no promise on the block's concurrent execution.
-}. So we do not know the order in which the blocks will be run.
+}\cite{tuomanen2018hands}. So we do not know the order in which the blocks will be run.
 
 
 However, there is a notion, which more or less guarantees the order of the execution of threads. 
-The Streaming Multiprocessor
-treats threads in groups of 32, which are called \underline{warps}. Think of the warps as a way to handle 
+\textbf{The Streaming Multiprocessor
+treats threads in groups of 32, which are called \underline{warps}}. Think of the warps as a way to handle 
 the threads, rather than 
 a way of grouping (as the blocks of threads) \footnote{In the AMD terminology, a warp is reffered to as the 
 \underline{wavefront}. It brings more insight into the nature of warps}.
+We will see that the warps are an extremely important concept of the GPU developement. 
+We will see that the execution of kernel by threads is more efficient, when we take into account the fact that 
+they are grouped by warps.
 
 \subsection{Memory model}
 The memory model of the GPU is quite complicated. It has different fields of memory that have different characteristics-
-latency of access, write/read modes, size, scope (to whom it is visible), etc... First let's take a look into 
+latency of access, write/read modes, size, scope (to whom it is visible), etc... First let's take a look into \textbf{genearal}
 notions concerning the memory model.
 \vspace{-15pt}
 \paragraph{Coalesced vs uncoalesced memory access.} 
@@ -122,8 +130,8 @@ notions concerning the memory model.
 
 Imagine a certain number of warps are scheduled by the SM. Lets say 2 blocks of 128 threads, which gives 
 $2\text{blocks}\cdot\nicefrac{128\text{thr.}}{32} = 8 \text{warps}$. These warps fetch some data 
-from a certain field of memory of the GPU. We know that the warp is something very grouped, even physically 
-the threads are grouped in it. It would be logical that they access adjacent memory addresses. This notion 
+from a certain place in memory of the GPU. We know that the warp is something very grouped. 
+Therefore it would be \texit{nice} that they access adjacent memory addresses. This notion 
 may seem quite confusing in the beginning, but let's see how Nvidia is describing it\cite{center}:
 
 \vspace{-10pt}
@@ -138,17 +146,18 @@ may seem quite confusing in the beginning, but let's see how Nvidia is describin
 \end{quote}
 Do not pay attention to the notion of \textbf{global} memory (we will discuss it soon).
 Try to read the Nvidia standart above again by looking at the coalesced scheme (\autoref{coalesced})
-to fully understand the mechanism. One may notice that this notion is crucial in the performance of the code.
+to fully understand the mechanism. One may notice that this notion is one of the most crucial in the performance of the code.
 Indeed, when writing the kernel, one must keep in mind this aspect and try to ensure (\sout{when possible}) 
 a coalesced memory access.
 
 \vspace{-15pt}
-\paragraph{\underline{Global memory}} is the largest memory in terms of the size, and yet with the greatest latency.
-As we've discussed, the kernels are launched \textbf{from} the CPU. It would be wise to be able to share 
+\paragraph{\underline{Global memory}} of the GPU is the largest memory in terms of the size, and yet with the greatest latency.
+As we've discussed, the kernels are launched \textbf{from} host (the CPU). It would be wise to be able to share 
 resources between the host and the device. For example, send data to the GPU from a usual \verb|C| programm
-and retrieve back in a processed form. This is exactly the purpose of the global memory. The global memory, as the 
-name suggests is \textsl{global}, i.e. it is \textbf{visible to all threads from all blocks}. As we will see in practice,
-the usual workflow is to copy the data from the global memory to some other (which is discussed below), 
+and retrieve back in a processed form, otherwise the GPGPU programming does not make sense. 
+This is exactly the purpose of the global memory. The global memory, as the 
+name suggests, is \textsl{global}, i.e. it is \textbf{visible to all threads from all blocks}. As we will see in practice,
+the usual workflow of the program is to copy the data from the global memory to some other (which is discussed below), 
 which is faster \footnote{You may think of it as the {\fontfamily{pcr}\selectfont malloc()} or {\fontfamily{pcr}\selectfont calloc()} functions in C
 or the keyword {\fontfamily{pcr}\selectfont new} in C++. Indeed, the allocation and the access to those variables is slower than 
 declaring on the stack:\newline {\fontfamily{pcr}\selectfont int $^{\ast}$ ptr\_a = new int; } is slower than {\fontfamily{pcr}\selectfont int a = \{\};}}  
@@ -156,44 +165,47 @@ to manipulate.
 
 \vspace{-15pt}
 \paragraph{\underline{Shared memory}} \label{grocery_store} is much faster than the global one, but evidently smaller. Other 
-crucial difference is the scope - the shared memory is \textbf{only seen by threads in the same block}. This provides 
-the ability for threads to share results and temporary calculations, and process the data \textsc{in place}. 
-Think of this situation as a client of a grocery store, where the customers are sort of threads. Every time a person 
-wants to cook something at their house, they don't drive to the store to buy every ingredient. They rather go there 
+crucial difference between global, is the scope - the shared memory is \textbf{only seen by threads in the same block}. This provides 
+the ability for threads of the same block to share results and temporary calculations, and process the data \textsc{in place}. 
+Think of the following situation: a grocery store, where the customers are threads. Every time a person 
+wants to cook something at their house, they don't drive to the store to buy every ingredient needed. They rather go there 
 once a week, for example, and buy the amount they need. They also make sure, 
 that everything can fit in the fridge. Thus 
 in this \sout{wonderful} analogy, the fridge is the low latency shared memory, and the grocery shop - the 
-big and unwieldy global resource.
+big and unwieldy global resource - global memory.
 One sometimes refer to this memory as 
 \textsl{cache memory controlled by the programmer}. However, it is important to take note that the reduced 
 latency of the shared memory does not guarantee a better performance. Indeed, the biggest pitfall for all \sout{of us} beginners 
 are the \textit{bank conflicts}\footnote{A small disclaimer: the notion of \textit{bank conflicts} was one of the reasons for these personal 
-notes. The reader should not panic if he's missing something. The examples will be discussed later in the practice part. So one 
+notes, as it took a very long time, for the author to understand this concept. The reader should not panic if he's missing something. The examples will be discussed later in the practice part. So one 
 should, if necessary, come back to this "theoretical" part after going through the examples. \sout{The author wants to apologize 
 for the eventual wordiness.}}. 
 
 \paragraph{Bank conflicts.}We already discussed the notion of warps, as an execution entity encapsulating threads. 
-One may think of the \underline{bank conflicts} as the analogy of warps in memory
+One may think of the \underline{banks} as the analogy of warps in memory
  (i.e. warps are located at the \textit{execution level abstraction}, and the 
- bank conflicts-at the \textit{memory level abstraction}). 
+ banks-at the \textit{memory level abstraction}). 
  Shared memory is organized into \underline{banks}.
 One \textit{layer bank} is a sequential field of 32 memory adreses of 4 bits ($32\text{\#adreses}\cdot 4\text{bits}$). 
 
 \begin{quote}
    \textsl{Memory can serve as many simultaneous address as it has banks.} 
 \end{quote}
-This is a very important property, so lest's consider an another \sout{illustrative} analogy. Suppose in a restaurant, each waiter 
-is assigned a strict number of tables, such that a waiter $A$ cannot take $B$'s tables. Suppose you are the host at this restaurant, 
-and you have a large group of people, who's number is the exact number as the resaurant's seats. The wise choice would be to 
-partition them between all the waiter's assigned tables, right? Wouldn't that be silly to partition all the guests, excepting one, 
-who will be waiting for a free place at $A$'s waiter's table, while there are free places at $B$'s table? The analogy \sout{may} not be 
-the best, but the sketch should do the trick: 
+This is a very important property, so lest's consider an another \sout{illustrative} analogy. Suppose in a national institution, 
+each employe 
+is assigned a counter, such that a single employe can serve only one client. Suppose you are the host 
+(the person, who assignes people to desks)
+and you have a large group of people, who's number is the exact number as the number of desks. The wise choice would be to 
+partition them between all the counters, right? Wouldn't that be silly to partition ,let's say 3, to one counter, 4 to 
+an another, etc... and there will be, let's say 8 free counters. At these 8 counters, the employes will simply wait 
+for customers, while there are customers, who are waiting in the queue.
+The analogy \sout{may} not be the best, but the sketch should do the trick: 
 
 \begin{figure}[H]
    \centering
    \includegraphics[scale=0.18]{pngs/banks1.png}
    \caption{Memory banks serving the threads. Only one thread can access a bank with a certain ID simultaneously. 
-   From the analogy, threads are clients, and banks are waiters, giving them memory.}
+   From the analogy, threads are clients, and banks are employes at countes, giving them memory.}
    \label{banks}
 
 \end{figure}
@@ -204,7 +216,8 @@ described in the GPGPU programming documentation. It is often
 encapsulated in the GPU APIs, such as OpenGL. Thus by using those API's, the programming is indirectly 
 reffered as the read-only memory.
 
-\paragraph{Local registers}By looking at the scheme of the architecture of the GPU vs the CPU (\autoref{cpuvsgpu}), one may notice the amount 
+\paragraph{Local registers}
+By looking at the scheme of the architecture of the GPU vs the CPU (\autoref{cpuvsgpu}), one may notice the amount 
 of registers in the GPU vs the CPU. The amount of registers in the GPU
 is incomprarble with the registers of the CPU. As you might have guessed, a 
 register is memory, with the scope of a thread. The compiler of a CUDA program will try to optimize the number and size of registers. 
@@ -215,11 +228,10 @@ play. This is the fastest memory available in the CUDA API, yet the most restric
 \label{subsection:mem_alloc_model}
 By now, we've made the difference between kinds of memory in terms of the scope, i.e, 
 \textbf{who} and \textbf{when} is able to access various kinds of memory. This, of course, somehow impacts the way we're allocating it. 
-However, one can classify the memory, in terms of its \textbf{allocation}. There are mainly fours ways of memory allocation.
+However, one can classify the memory, in terms of its \textbf{allocation} procedure. There are mainly four ways of memory allocation.
 
-
-We will see further that standart 
-code, which uses GPU resources, follows a certain path/pipeline. 
+We will see further that a standard
+program, which uses GPU resources, follows a certain path/pipeline. 
 Roughly that is: 
 \begin{enumerate}
 \setlength\itemsep{-0.1em}
@@ -239,7 +251,7 @@ memory on the GPU from the host (by calling a certain CUDA function, which will 
    \item Mapped memory
    \item Unified memory
 \end{itemize}
-The difference in terms of the API calls, use cases and mechanisms, will be explained further. 
+The difference in terms of the API calls, use cases and mechanisms, will be explained further [REEEEFFF]. 
 
 
 

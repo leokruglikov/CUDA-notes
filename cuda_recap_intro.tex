@@ -7,28 +7,30 @@ are also taken from different resources,
 and has not always been tested. The author will do its best to try to cite the sources. 
 Therefore it is really a \textit{collage} of notes, articles, books on the CUDA programming.
 The author's main goal is to provide the most detailed possible explanation of 
-various code snippets and descriptions.
+various code snippets, as well as try to explain the main features of CUDA programming.
 
 Note that this document was initially written for the author itself, who is a physics major 
 and is a fully self-taught guy in programming. 
 For the author, it was a way of learning the topic and memorize 
-the important concepts. 
+the important concepts of it. 
 
 The goal of these notes is to \textbf{give us a good basic understanding of the 
-GPU architecture, and \underline{the most important,}, to try to fully depict
-the most common examples of CUDA codes.} 
+GPU architecture, and \underline{the most importantly,}, try to fully depict
+the most common examples of CUDA codes}.
 
 \section*{Dictionary}
 \label{section:dictionary}
 \begin{itemize}
    \setlength\itemsep{-0.5em}
    \item GPU - Graphics Processing Unit
-   \item CUDA - Compute Unified Device Architecture. The language we use to \textit{talk to the GPU}. I will often refer to it as the CUDA API. 
+   \item CUDA - Compute Unified Device Architecture. The language we use to \textit{talk to the GPU}. I will often refer to it as the CUDA API. In fact,
+     it is not a language, but an API.
    \item Device - the GPU, from the software viewpoint. You may think of the notion of the 
-   device as an external kind of executor, in our case, the GPU.
-   \item Host - the CPU, from the software viewpoint. The \textit{machine}, that will launch the GPU from a
-    usual \verb|C/C++| (or any other language) program, which, by default, will execute on the CPU.
+   device as an external executor of a function, in our case, the GPU.
+   \item Host - the CPU, from the software viewpoint. The \textit{machine}, that will launch GPU code from a
+    usual \verb|C/C++| (or any other language) program, which, by default, would have been executed on the CPU.
    \item Kernel - nothing more than a function, that will run on the device(GPU).
+   \item SIMT/SIMD - Single Instruction Multiple Threads/Data.
 \end{itemize}
 
 
@@ -38,13 +40,14 @@ the most common examples of CUDA codes.}
 \section*{Small introduction}
 If one wants to perform computations on the GPU, one must have a way to adress it. There are various
 API's developed. The biggest ones are the Khronos Group's OpenCL, Microsoft's Direct Compute, and the one 
-discussed here, the Nvidia's Compute Unified Device Architecture, or shortly - CUDA.
+discussed here, the Nvidia's Compute Unified Device Architecture, or shortly - CUDA. Do not mix it up with 
+OpenGL, which is a slightly different thing, as it operates more on the graphics functionality.
 
 
 When discussing the necessity of the GPU for computations, many come up with the example of the car and the bus \cite{habr_car_vs_bus}. 
 Suppose you need to transport people from a point $A$ to a point $B$. To solve this problem, you are 
 given a car and a bus. What would be the most optimized way to transport these people? We introduce here
-the notion of throughput (bandwith) and latency. The ability to perform a certain number of operations in a certain period of 
+the notion of throughput (bandwidth) and latency. The ability to perform a certain number of operations in a certain period of 
 time is the throughput, and the amount of time that is required to perform a single operation is the latency.
 In our analogy, the bus, having a smaller speed than the car, but a greater capacity, has a big latency but 
 a big throughput. On the other hand, the car has a small latency and small throughput.
