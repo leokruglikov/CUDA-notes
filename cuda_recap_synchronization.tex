@@ -3,9 +3,10 @@
 
 As we've discussed in the section on architecture, when writing kernels, we need always to think about the GPU's hardware, scheduling, etc...
 By now, with the basic examples we've considered only \textit{basic} operations. Indeed, the only API function we've used in the kernel is the \verb|__syncthreads()|. 
-This is a simple syncing mechanism, that ensures that all the threads within the block are 
+This is a simple syncing mechanism, that ensures that all the threads \textbf{within the block} are 
 done before this barrier. This is block-level synchronization barrier.
 
+\subsection{Cooperative Groups}
 
 \begin{listing}
 \begin{minted}[frame=single, linenos=true]{cuda}
@@ -33,24 +34,24 @@ __device__ int reduce_sum(
 
 
 Cooperative groups is a relatively new feature to the CUDA API.
-As the name suggests it, this feature enables us to group threads into groups, with the 
+As the name suggests it, this feature enables us to group threads, with the 
 ability to perform common, collective operations (or simply collectives). We can also 
-perform synchronization between the threads in the same cooperative groups. 
-With these API features, one can simplify the code, thus avoiding common mistakes.
-For example, one can make the code easier to read. For example, in the code snippet 
+perform synchronization between the threads, belonging to the same cooperative groups. 
+With these API features, one can simplify the code, thus avoiding common mistakes and make it more readable.
+For example, in the code snippet 
 \autoref{coop_group}, we perform the exact same algorithm as in \autoref{shatred_mem_optim1},
 by using some utility of the CUDA API. In this case, the \verb|cooperative_groups::thread_group|
 class (do not pay attention to how we created this object and/or how it is declared).
-The \verb|thread_rank()| function gets the ID/rank of the thread in the thread group \verb|g|.
-Then we're calling the \verb|sync()| function, which ensures that all the threads within the
-block will be done setting the \verb|val|, and the second to ensure that all threads are done reducing. It is important to understand, that all the threads will return the val. 
+The \verb|thread_rank()| function gets the ID/rank of the thread within the thread group \verb|g| (the same way as \verb|threadId.x| within a block). 
+Then we're calling the \verb|sync()| function, which ensures that all the threads within the thread group 
+will be done setting the \verb|val|, and the second to ensure that all threads are done reducing. It is important to understand, that all the threads will return the val. 
 However, only the thread 0 will accumulate all the \verb|val|'s.\cite{blog_2020}
 
 \subsection*{Thread blocks}
 We've already seen the notion of a thread block many times. This notion was always quite \textit{abstract}. Indeed, while launching the kernel, we've 
-always kept the notion of thread blocks in our mind, but never actually accessed it. However, in newly introduced features, one "access" the 
-thread block explicitly. A quoted "access", because we can actually manage synchronization of the thread blocks. Remember the legacy \verb|__syncthreads()| function. 
-Well, syncing the this\_thread\_block() does the same thing as the \verb|__syncthreads()|. Thus, there are several ways/semantics to synchronize the threads. 
+always kept the notion of thread blocks in our mind, but never actually accessed it. However, in newly introduced features, we can "access" the 
+thread block explicitly. Remember the legacy \verb|__syncthreads()| function. 
+Well, syncing the \verb|this_thread_block()| does the same thing as the \verb|__syncthreads()|. Thus, there are several ways/semantics to synchronize the threads. 
 The following function calls are synonyms.
 
 

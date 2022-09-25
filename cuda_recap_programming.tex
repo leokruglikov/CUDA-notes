@@ -2,23 +2,28 @@
 
 \paragraph{} By now, we have talked about the architecture of the GPU \footnote{Mainly about the Nvidia's architecture, but it 
 can be quite well generalized to other GPU's.} by briefly discussing different notions - 
-the execution model of threads and kinds of memory. Now, we will try to look at examples of CUDA codes. We will try to refer to 
-all these concepts in order to get a more detailed understanding. One will maybe need to refer to the section above 
-to link the theory with a bit of practice. I will do my best to choose the most illustrative examples to explain specific concepts, 
-as well as introducing with some tools. 
-Also note that I use Linux (\autoref{disclaimer}).
+the execution model of threads and kinds of memory. Now, we will try to look at examples of CUDA codes and programs. 
+We will try to refer to 
+all these prior concepts in order to get a more detailed understanding. One may need to have a look at the section above 
+to link the theory with the practice discussed here. I will do my best to choose the most illustrative examples (of those available 
+in different resources) to explain specific concepts, 
+as well as introducing some tools. 
+Also note that I use Linux. (\autoref{disclaimer}).
 
 \subsection{Setup}
 Before starting writing some code, we must install the necessary packages and libraries. Every computer and operating system 
-have their own subtleties, so the best way to install necessary tools, one should check the documentation for the specific system.
+have their own subtleties, so the best way to install necessary tools, one should check the documentation for the specific system
+\footnote{See the installation methods and required components on \url{https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html}.}.
 For Linux, the main packages are \verb|CUDA| and \verb|CUDA-toolkits|. If we've already used our computer for some time,
 we probabably have Nvidia drivers installed. 
 
 
-When we run a \verb|C| program, we need a compiler - the most common one \sout{and the best one} is \verb|gcc|. For \verb|C++|, 
-we invoke his improved \verb|g++|. For CUDA programs, however, we need \verb|nvcc|. As we've discussed, the program 
-consists of host and device code. The device host is just plain \verb|C|/\verb|C++| code, so \verb|nvcc| is also able 
-to compile plain code. Note that CUDA codes have a \verb|.cu| extension.
+
+When we run a \verb|C| program, we need a compiler - arguably, the most common one \sout{and the best one} is \verb|gcc|. For \verb|C++|, 
+we invoke his \textit{improved} version \verb|g++|. For CUDA programs, however, we need the NVidia's CUDA compiler -
+\verb|nvcc|. As we've discussed, the program 
+consists of host and device code. The device code is just plain \verb|C|/\verb|C++| code, so \verb|nvcc| is also able 
+to compile plain \verb|C|/\verb|C++|code. Note that CUDA code have a \verb|.cu| extension.
 
 \begin{listing}[!ht]
 \begin{minted}[frame=single]{zsh}
@@ -31,7 +36,7 @@ to compile plain code. Note that CUDA codes have a \verb|.cu| extension.
 \end{listing}
 
 \vspace{-0.4cm}
-If this terminates with success, the program is successfully launched and terminated. 
+If both of the programs do not return an error, the code has been compiled and launched successfully.
 
 \subsubsection{Hello from CUDA}
 Let's create our first CUDA and C++ program, and discuss every step below. 
@@ -58,11 +63,14 @@ Line $5$ contains \verb|__global__| declaration specifier which tells
 the compiler that the following kernel (function) can be launched on the device.
 In \verb|main()| function, on line 11, we call the kernel. This is the semantics to 
 invoke a CUDA kernel. The \textit{arguments} in the angle brackets \verb|<<<,>>>| 
-are the dimension of threads \& blocks respectively that the kernel will be run on. In this case, 
+are the dimension of threads blocks respectively that the kernel will be run on\footnote{We will see further, some additional stuff can be passed
+into these brackets, such as the size of memory and streams - concepts that will be seen in further sections
+} \& . The type these dimensions can be either unsigned integer, or of the \verb|dim3| type, which we will mention in a moment. In this case, 
 the GPU will call $2$ blocks, with $4$ threads each. This indeed results in 
 $8 = 2\cdot 4$ invocations of \verb|printf()|. Finally, from the main function, we call 
-the \verb|cudaDeviceSynchronize()| method, that finishes all the blocks before the main 
+the \verb|cudaDeviceSynchronize()| method, waits for all blocks before the main 
 function returns.
+
 
 \subsection{Threads \& blocks indexing}
 Now let's dive in deeper, and access threads and block indexing by modifying our 
@@ -93,11 +101,12 @@ We thus discovered how to access block and thread id's. The
 variables \verb|threadIdx| and \verb|blockIdx| are of type \verb|dim3|,
 which is a simple structure, containing 3 unsigned int's. By aceessing 
 its \verb|.x| member variable, we are reffering to the 1D indexing. In general, 
-threads are indexed using \verb|dim3| type. Thus, for a thread, there exists x, y and z 
-dimensions.
+threads are indexed using \verb|dim3| type. Thus, for a thread, living inside a block, there exists x, y and z 
+dimensions. And same for the blocks, living in the grid - x, y and z components. 
+Think of threads, 
 We can launch many threads in many blocks, but how many? This depends on 
 the hardware we are using.
-To get these specifications, one can look this information online or asking our computer.\footnote{
+To get these specifications, one can look up this information online or asking our computer.\footnote{
 To do so, one must find where {\fontfamily{pcr}\selectfont cuda} is located. In my case, it is in 
 {\fontfamily{pcr}\selectfont /opt/cuda/}.
 Once here, we seek for {\fontfamily{pcr}\selectfont /samples/1\_Utilities/deviceQuery/} 
@@ -108,15 +117,21 @@ From here, we execute {\fontfamily{pcr}\selectfont ./deviceQuery}.
 \subsection{Memory}
 
 \subsubsection{Vector addition}
-To discover memory allocation with code examples, we will consider vector addition. And to do that, 
-one must first cover thread \& block indexing for a more general case.
-\paragraph{A more complex indexing.} The first \textit{useful} example 
+The first \textit{useful} example 
 that is usually introduced in CUDA tutorials is the vector addition. This exaple
 perfectly illustrates the need of GPU parallel model. Indeed, the component of the resulting
  vector $x$ $x_i$ does not depend on other components. So the formula for vector addition is given by 
- $x_i = a_i + b_i$. In parallel sequential execution, we would create a loop, iterate over all elements and 
+ $x_i = a_i + b_i$. In sequential execution, we would create a loop, iterate over all elements and 
 do something like \verb|x[i] = a[i] + b[i]|. In order to parallelize this workflow, we must initiate $N$ 
-threads, with $N = \text{number of components in the vector}$. But we know that the number of threads in one 
+threads, with $N = \text{number of components in the vector}$. In \verb|C++|, which simply runs on the host, we create the threads 
+using the standart \verb|std::thread|. We know, however, that the CPU does not have many threads (probably from 4 to 12 in most cases). 
+This is where the GPU with its multithreaded architecture comes in. The idea here is to launch $N$ threads which are spread over many blocks.
+
+\newline To discover memory allocation with code examples, we will consider vector addition. And to do that, 
+one must first cover thread \& block indexing for a more general case.
+
+\paragraph{A more complex indexing.} 
+We know that the number of threads in one 
 block is limited. Let's check on Nvidia's official CUDA documentation \cite{center} concerning threads indexing. 
 \begin{quote}
    \textsl{For convenience, {\fontfamily{pcr}\selectfont threadIdx} is a 3-component vector, 
@@ -131,18 +146,19 @@ block is limited. Let's check on Nvidia's official CUDA documentation \cite{cent
    thread of index $(x, y, z)$ is $(x + y\cdot Dx + z\cdot Dx\cdot Dy)$.}
 \end{quote}
 
-Before writing some code, let's once again try to visualize the Nvidia's quote.
+Before writing some code, let's try to visualize the Nvidia's quote.
 \begin{figure}[H]
    \centering
    \includegraphics[scale=0.25]{pngs/tindexing.png}
    \label{tindexing}
-   \caption{Simple example to illustrate a simple 1D indexing (supposing a block 
+   \caption{Simple example to illustrate a plain 1D indexing (supposing a block 
    contains 4 threads). We see how the expression \textsc{blockIdx.x*blockDim.x+threadIdx.x} is used (see below). 
    One can easily extrapolate the indexing to 2D and 3D cases, as described in the Nvidia documentation above.
    }
 \end{figure}
-
-Let's now write code to add a vector, using a 2D indexing: 
+Let's now write code to add two vectors, using a 2D indexing \footnote{This is the first and almost the only \textbf{full} example of a cuda program. 
+That is, the author will mostly provide the key aspects of the newly introduced features, thus skipping the usual parts of defining things, of allocating 
+memory, freeing it, etc.}: 
 
 \begin{listing}
 \begin{minted}[
@@ -204,7 +220,7 @@ Ok, there are multiple aspects to discuss...
 
 First let's discuss the code. First on the device. Remember we discussed about the global GPU memory. 
 The line 31 we're working with memory. The classical pipeline of any CUDA program
-execution, is iusually the following:
+execution, is usually the following:
 
 \begin{enumerate}
 \setlength\itemsep{-0.5em}
@@ -219,56 +235,62 @@ execution, is iusually the following:
 \paragraph{Allocate memory on host.} To allocate memory on host, 
 we proceed with the usual C \verb|malloc()| function and naturally 
 casting the returned pointer to \verb|double*| (don't forget 
-to free memory by \verb|free()| function). 
+to free memory at the end by \verb|free()| function). 
 Then we call a simple function \verb|init_host_vector()| that will just initialize the data 
-to some values. 
+to some values, let's say to simple $0,1,2,3, ...$. 
 \paragraph{Allocate memory on device.} Then we allocate \textbf{global memory} on the GPU, 
 by calling the \verb|cudaMalloc()| fucntion. Note the arguments that this function takes - 
-a \textit{pointer to pointer} - \verb|(<type> **)| and the size in bytes. 
+a \textbf{pointer to pointer} - \verb|(<type> **)| and the size in bytes. 
 
-\vspace{-0.8cm}
-\paragraph{Data copying} is done using the \verb|cudaMemcpy()| function. Pay also attention 
+ 
+\paragraph{Data copying} between the host and the device is done using the \verb|cudaMemcpy()| function. Also pay attention 
 to the parameters - 
 \verb|cudaMemcpy(void* destination, void* source, size_t size_in_bytes,| \newline \verb|enum cudaMemcpyKind kind)|,
 with \verb|kind| \footnote{Here, I described the parameters in details. However, further on,
 the author will not be that precise. The reference for this function was taken from 
-\url{http://horacio9573.no-ip.org/cuda/group__CUDART__MEMORY_g48efa06b81cc031b2aa6fdc2e9930741.html} }specifies how to copy. In code, it is understandable that we the destination is 
+\url{http://horacio9573.no-ip.org/cuda/group__CUDART__MEMORY_g48efa06b81cc031b2aa6fdc2e9930741.html}. 
+For further function descriptions, always have a look at it.}
+specifies how to copy. In code, it is understandable that we the destination is 
 device and the source is host.
 
 \vspace{-0.8cm}
 \paragraph{Calculation.} The kernel computes the sum of a vector of size $512\cdot 64 = 32768$. 
-Therefore $64$ blocks of $512$ threads are launched, and $32768$ threads execute the \verb|add_vec()|
-function. In the kernel, each an ID is assigned to the thread (line 10) (see the indexing \textit{policy} \autoref{}). 
-We write a simple \verb|if()| statement, to be sure, that the thread does not go out of bounds.
-Thus every thread does exactly one calculation \footnote{Of course, without taking into account the calculation of the id.}
+Therefore $64$ blocks of $512$ threads are launched, and $32768$ threads independently execute the \verb|add_vec()|
+function. In the kernel, a unique ID is assigned to the thread(line 10) (see the indexing \textit{policy} \autoref{tindexing}). 
+The ID's span from $0$ to $32768$, without ever repeating itself and covering all the numbers in the interval.
+We also add a simple \verb|if()| statement, to be sure, that the thread's ID does not exceed the size of the vector.
+Thus every thread does exactly one calculation \footnote{Of course, without taking into account the calculation of the id.}.
 Remember that the memory, in which these processes are happening, is the global memory. 
 
 \vspace{-0.8cm}
-\paragraph{Terminating.} After the kernel, we call the usual synchronization function. 
-Then, a simple check function on host, simply to ensure, that the parallel vector addition was successful.
+\paragraph{Terminating.} After the kernel, we call the usual synchronization function, which will, as usual, wait for all the threads and blocks 
+to finish the calculations. 
+Then, a simple check function on host, simply to ensure, that the parallel vector addition was successful and that we've received the correct result.
 And finally, the \verb|cudaFree()| method, which does exactly what it is expected - 
-frees the \textit{dynamically} allocated memory on the GPU.
+frees the allocated memory on the GPU, the exact same things, as the \verb|free()| does in a usual \verb|C| code.
 
-Let's also link this piece of code to the section about warps. Remember, 
-threads are scheduled by the SM by warps - groups of 32 threads (\autoref{warps}). 
+Let's also try to link this piece of code to the section about warps. Remember, 
+threads are scheduled by the SM into warps - groups of 32 threads (\autoref{warps}). 
 In this case, we're launching a total of $\nicefrac{512}{32} = 16 \text{warps}$ for each 
 block, and 64 independent blocks. While working with CUDA threads, it is advised to work with 
-the number, which is multiple of $32$. Indeed, imagine, if we were to launch $513$ threads on a block.
-Then the SM would schedule 17 warps. This number is the same as if we would launch $544$ threads in a block.
+the number, which is multiple of $32$ (the thing we've done in this example). Indeed, imagine, if we were to launch $513$ threads on a block.
+Then the SM would schedule 17 warps. This number of warps is the same as if we would launch $544$ threads in a block.
 Indeed, this will launch $16\cdot 32 = 512$ threads (executed simultaneously in one warp) \textbf{and} 
 one additional thread on a almost empty/unoccupied warp. 
 
 One could also be interested in the difference in the execution time between 2 different
  configurations - either $64\text{threads}\cdot 512\text{blocks}$ or $32\text{threads}\cdot 1024\text{blocks}$
+ The benchmarking is very important and useful in GPGPU programming. Different tools and techniques of 
+ benchmarking CUDA programs will be discussed in further sections.
 
 \subsubsection{Multiple dimension memory}
 By now, we've looked into the global one-dimensional 
 memory allocation (and copying) on device. Suppose you would like to work 
-with 2D allocated memory. It is clear that we could do without this feature. 
-Indeed, if we want to work with, let's say a 2D matrix, we could simply 
-transform with a 1D vector of size rows$\cdot$cols.
-However, there is a feature in the CUDA API, to allocate 2D, and even 
-3D memory\cite{MemoryAlignment}. 
+with 2D allocated memory. It is clear that we could work without the ability to explicitly allocate 2D or 3D arrays. 
+Indeed, if we want to work with, let's say, a 2D matrix, we could simply 
+transform it into a 1D vector of size rows$\cdot$cols.
+However, there is a feature in the CUDA API, that lets us to allocate 2D, and even 
+3D memory \cite{MemoryAlignment}. 
 The method that implements 2D memory allocation is \verb|cudaMallocPitch| with the following signature:
 
 
@@ -321,8 +343,11 @@ __global__ void access_2d(float* devPtr, size_t pitch,\
 }
 \end{minted}
 \caption{To get this straight, one should know 2D array work in pure C. 
-Indeed, to access each element, we access it using LINE by casting to \textsc{char*}, which 
-gives us the very first element of all the pitch. We see that this 2D pitch is allocated 
+  Indeed, to access an element, we first identify the current row, by doing some pointer manipulations. 
+  And then, once the pointer to the very beginning of the row is identified, we iterate over this 
+  row, by accessing it sequentially. Also note that in the code, in order to identify the 
+  row for the next iteration (i.e. it's $0$'s element pointer), one use the size of the pitch, and 
+  not of the width. We see that this 2D pitch is allocated 
     \textbf{automatically} by the cuda memory management system.\cite{blog_2020}}
 \label{allocation2d}
 \end{listing}
@@ -330,16 +355,19 @@ As you might have guessed, this memory access is not extremely efficient as it i
 all threads \& blocks that the kernel will be launched with, will \textbf{all} access all the elements of the 
 pitch memory. As one may say, \textsc{this is for educational purposes only}. In the documentation, it recommended, 
 to use these functions to allocate and initialize the 2D memory on device. Hopefully, we all can find 
-use cases of this memory and efficient indexing.
+use cases of this memory and efficient indexing \footnote{There are a lot more of memory allocation, \& memory copy methods, 
+provided in the CUDA API. For example {\fontfamily{pcr}\selectfont cudaMallocArray()}, which has also a different signature.
+The different methods, dedicated to memory allocation and management can be observed \href{https://courses.cs.duke.edu/cps296.3/fall09/cuda_docs/html/group__CUDART__MEMORY_ge56101fe6f1ce0b48f163632f6862ae4.html#ge56101fe6f1ce0b48f163632f6862ae4}{here___}}.
 
 \subsection{More on Memory}
 \subsubsection{Shared memory vs global memory}
 
 For now, in the examples, we've only looked into the global (\& pinned) memory. It is global and accessible 
-for all threads in all blocks for both read and write operations, and yet having great latency, comparing to 
+for all threads in all blocks for both read and write operations, and yet having high latency, comparing to 
 more local memory types, such as the shared one. Shared memory's scope is one \underline{thread-block}. Thus, if, let's say,
 a block contains 16 threads, the shared memory can only be read and modified by 16 local threads. If one wants to operate on it 
-locally, the data must be copied to it.
+locally, the data must be copied to it. Therefore, if one wants this memory to be accessed/modified by 2 thread-blocks ($=32$ threads), one 
+must make sure that the data has been copied to the shared memory of the two blocks.
 
 Let's now consider a more complex and yet classical example - matrices. Recall basic matrix operation - 
 \begin{itemize}
@@ -368,31 +396,35 @@ on transforming 2D array to 1D, to make things clear and easier for further anal
    Suppose we are given a 2D array (matrix). But we know that, behind the scenes,
    (even if we're accessing a[i][j] in many programming languages), it all breaks 
    down to contiguous, linear memory addresses. So suppose you have allocated 
-   a 1D array arr of size $N$. The, you could access your i'th element by doing arr[i]
-   (supposing C or C++) or by doing *(arr + i), where arr - the address of the 0'th element 
-   of the array arr. So the formula is given by $\text{A}_{i^{th}} = A_{0} + \text{SZ}\cdot i$, where 
-   $A_0$ - the first (0'th) memory address and SZ-the size of one memory field (e.g. SZ$_{\text{char}} = 1$).
+   a 1D array arr of size $N$. The, you could access your i'th element by doing {\fontfamily{pcr}\selectfont arr[i]}  
+   (supposing C or C++) or by doing {\fontfamily{pcr}\selectfont*(arr + i)}, where 
+   {\fontfamily{pct}\selectfontarr} - the address of the 0'th element 
+   of the array . So the formula is given by $\text{A}_{i^{th}} = A_{0} + \text{sizeof(type)}\cdot i$, where 
+   $A_0$ - the first (0'th) memory address and sizeof-the size of one memory field (e.g. sizeof(char) = 1).
    Suppose now, that we've allocated a 2D memory array of size $M\text{rows }\times N\text{cols}$. For the first row
    one can apply our previous formula - $A_{0,j} = A_{0} + \text{SZ}\cdot j$. However, if $j$ is 
-   greater than $N$ - the number of columns, a problem occurs. If we work in 2D, we would just 
-   \textit{reset} our index $j$ to 0 and increment $i$ (if $j=N-1$). However, in 2D case, in order to 
+   greater than $N$ - the number of columns, a problem occurs. If we work in 2D indexing, over a loop, we would just 
+   \textit{reset} our index $j$ to 0 and increment $i$ (if $j=N-1$). However, in a flatened 2D case, in order to 
    access $A_{i,j}$ address-wise, we use the expression 
-   $A_{i,j} = A_{0} + \text{SZ}\cdot N\cdot i + j)$. One can easily check, that this expression is consistent with all the 
+   $A_{i,j} = A_{0} + \text{sizeof(type)}\cdot N\cdot i + j)$. One can easily check, that this expression is consistent with all the 
    examples. This expression is for row major arrays - accessing successive elements in a certain row.
    }
    \label{intermezzo1d2d}
 }
 \newline
 \newline
-\newline Okay, now one can attack the code. From line 13 to 21, we are initiating the data and 
-allocating memory (don't forget to initialize the data in your code). The lines 27 \& 28 are initializing the 
-\textit{pitch}, that the kernel will be launched on. In this case, \verb|grid_dim| is the dimension of the grid, 
+\newline Okay, now we can attack the code. From line 13 to 21, we are initializing the data and 
+allocating memory. The lines 27 \& 28 are initializing the dimensions 
+(number of threads in x,y directions and the number of blocks in the x, y directions), that the kernel will be launched on. 
+Note that we are using 2D indexing for the first time.
+In this case, \verb|grid_dim| is the dimension of the grid, 
 in which blocks are contained. The \verb|block_dim| is the block dimension - the number of threads in the block. 
 In this case there are $16\cdot 16 = 256\text{threads}$ and $\frac{32}{16}\cdot \frac{32}{16} = 2\cdot 2 = 4 \text{blocks}$. 
 So there are $256\cdot 4 = 1024 \text{threads}$ partitioned between 4 blocks. This is exactly what we need, 
 because the resulting matrix $C$ is exactly $32\times 32$, which gives us 1024 elements. Therefore, if everything goes well,
 each thread will perform the calculation for each element $c_{i,j}$ of the matrix $C$. 
-Each thread must iterate over one line of the matrix $A$ and one column of $B$. Remember the \hyperref[intermezzo1d2d]{1D to 2D mapping}. 
+In theory, we would like that 
+each thread iterates over one line of the matrix $A$ and one column of $B$. Remember the \hyperref[intermezzo1d2d]{1D to 2D mapping}. 
 is going through all the elements in the row $i$ of the matrix $A$ (line 43). 
 
 
@@ -405,25 +437,26 @@ B_{h,j} = B_{0} + h \cdot N_{cols(B)} + j
 \end{gather*}
 These equations (at least the first one) are exactly predicted by \hyperref[intermezzo1d2d]{1D to 2D mapping} and
 are represented on the lines 43 and 44 of the code snipped. 
-Finally, once each thread runs over its own row and column, it is putting together 
-gathering the result by assigning this accumulated sum to the \verb|C[i][j] = C[i*Width + j]|, where i,j - row id's and column id's respectively\footnote{This 
+Finally, once each thread runs over its own row and column, it is 
+gathering the result by assigning this accumulated sum to the 
+\verb|C[i][j] = C[i*Width + j]|, where i,j - row id's and column id's respectively\footnote{This 
 aspect is not simple yet basic. This is a common CUDA pattern, which needs to be understood correctly 
-\sout{(or at least know where to look for)}. So one should try to visualize the indexing process. The author always draws a sketch to visualize the indexing process on a piece of paper}.
+\sout{(or at least know where to look for)}. So one should try to visualize the indexing process and the algorithm workflow. 
 
 
-
-
-\paragraph*{Shared memory} is one of the keys, to control the efficiency of a CUDA programming. 
+\paragraph*{Shared memory} is one the key, to control the efficiency of a CUDA program. 
 As we've mentionned several times before, the shared memory is only visible in block's scope. That means that 
-if, \textit{supposing}, we would like to make the shared memory visible \& accessible to all threads, we would 
-need to allocate (and transfer to) shared memory for each block. Remember the analogy of the \hyperref[grocery_store]{grocery store}.
-It's to the programmer to decide, whether it would be reasonable to spend time on shared memory allocation
- (which, of course, takes time, but has little latency), or to the memory access.
-So let's have a look at a shared memory code snippet\footnote{For space-saving's sake, only a snipped is provided. The skipped pieces are usual pattern steps.}.
+if, we would want to make the shared memory visible \& accessible to all threads in the entire kernel, we would 
+need to allocate (and transfer the data to) shared memory, which belongs to independent blocks. 
+Remember the analogy of the \hyperref[grocery_store]{grocery store}.
+It's to the programmer to decide, whether it would be reasonable to spend time on algorithm design, using shared memory, and its allocation
+ (which, of course, takes time, but has little latency, when using it), or to the high-latency global memory access.
+So let's have a look at a shared memory code snippet\footnote{For space-saving's sake, only a snipped is provided. The skipped pieces are usual steps of 
+memory allocation, freeing resources, etc...}.
 demonstrating shared memory usage for matrix multiplication. 
-Let's first discuss the general strategy. As we have discussed, the shared memory is much smaller in terms of size 
-than the global ones. So here, the main idea is to divide the \textit{big} matrices $A$ and $B$, that we're multiplying into smaller
-sub-matrices, which will be loaded into the shared memory later.
+Let's first discuss the general strategy. As we have said, the shared memory is much smaller in terms of size 
+than the global one. So here, the main idea is to divide the \textit{big} matrices $A$ and $B$, that we're multiplying into smaller
+sub-matrices, which will be loaded into the shared memory later of each independent block.
 
 \begin{figure}[h!]
    \begin{center}
@@ -518,16 +551,20 @@ with the scheme above.
 \begin{enumerate}
    \item The matrices are assumed to be multiples of BLOCK\_SIZE (block dimensioin in fact). In this case, let's say $32\times 32$. So, 
    from the main function, we're launching 32 threads in each block, and $2\times 2 = 4$ blocks in a grid. Thus we have 
-   $32\times 32\times 4=4096 \text{ threads}$, organized in a grid of 2 blocks, each containing threads 
-   positioned in a 2D manner. Keep that launched chunk of threads in mind. 
+   $32\times 32\times 4=4096 \text{ threads}$, organized in a grid of 4 blocks. So there is a kind of mapping between 
+   the 2D matrix and the threads partitioned into blocks.
+   Keep that launched chunk of threads in mind. 
    \item The first thing we do in the kernel is attributing the block row and colums id's. They correspond to blockRow and blockCol, 
    annotated in the figure \ref{global2d}. There will thus be 4 sub-matrices to which, to which each block will be assigned to (as we've said 
    that the block is of size $16\times 16$ and the matrix size is $32\times 32$). Remember that
    the shared memory is \textbf{only visible inside a block}. Thus the possible configurations of the indices are given by 
    $(A_{row}=0, B_{col}=0)$, $(A_{row}=0, B_{col}=1)$, $(A_{row}=1, B_{col}=0)$ and $(A_{row}=1, B_{col}=1)$. These indices correspond to the 
    \textit{olive color} strips on the figure, labeled with BlockRow and BlockCol respectively.
-   \item Then we're initializing the sub-matrix $C_{sub}$ - its dimensions, elements and stride(think about what 
-   could the stride mean). This sub-matrix $C_{sub}$ is illustrated in the figure \ref{global2d}. 
+   \item Then we're initializing the sub-matrix $C_{sub}$ - its dimensions, elements and stride.
+    The stride, in our case is the offset we need to take into account, when computing the elements in row-major form. Note that it is not always
+    the same as matrix width. For example, when we're dealing with the submatrix, the stride does not equal to its width, but rather to 
+    \textbf{the original matrix width's}. Indeed, the size of the submatrix does not affect the element's addresses in memory.
+    This sub-matrix $C_{sub}$ is illustrated in the figure \ref{global2d}. 
 
 
         This gives us the ability to keep 
@@ -535,10 +572,10 @@ with the scheme above.
    of (sub-)matrices involves accumulation of element-wise multiplication, so we're initializing the temporary sum to $0$.
    \item The initialization is followed by the initialization of sub-id's. These are the thread id's \textbf{within a block}.
    Thus these id's will be uniquely identified for each thread within the block, launched on a unique kernel instance. And, as we know, each block will be responsible for
-   for one sub-matrix of $C$ - $C_{sub}$. These id's are represented by yellow lines and cols on the figure.
+   for one sub-matrix of $C$ - $C_{sub}$. These id's are represented by yellow rows and columns on the figure.
    \item Now, an important assumption will be made - the number of blocks contained in A's matrix width is the same as the number of 
    blocks contained in the B's matrix height\footnote{This is an assumption, that is, as we say W.L.O.G - without loss of generality. 
-   Indeed, if this assumption is not the case, one could modify a bit the code (as we say in fancy high school books -you can check it yourself as an exercice \dout{(the author is, maybe, too lazy to do that)}.)
+   Indeed, if this assumption is not the case, one could modify a bit the code for it to work without this assupmtion.
    However, this is neither a problem, because, one can allocate and perform operations on a bit bigger matrices, without big issues in 
    performance}. This is the reason why we can use the first loop, to iterate over A'th width and B'th height \textit{simultaneously}. 
    \item As mentionned just above, we can simultaneously iterate over A'th width and B'th height, thus simultaneously obtaining the sub-matrices 
@@ -574,7 +611,7 @@ with the scheme above.
    \label{fig:bankconflicts2}
 \end{figure}
 
-\paragraph{Bank conflicts.} We have shown several applications of the theoretical notion described in the section 
+\paragraph{Bank conflicts.} We have pracitcally discussed several applications of the theoretical notions described in the section 
 on architecture. How about the bank conflicts? Remember - the warps are chunks of threads (way of scheduling/organizing them). 
 The banks are chunks of memory and a way to structure them. Also remember that, ideally, 32 threads 
 organized in one warp access simultaneously one "column" at a time \autoref{banks}. So if two threads in a warp access simultaneously 
@@ -582,7 +619,7 @@ one bank (one column), there is a bank conflict, and the warp will be forced to 
 The classical bank conflict is often illustrated by the 2D array initialization in shared memory. 
 
 Once again: suppose we are simply allocating a 1D array (either in global or shared memory) of size 32 bytes. Then one warp is accessing one bank of memory. 
-Suppose now we're allocating 64 or 128 bytes of memory, then then 2 and 4 warps  respectively will access the memory sequentially, i.e. 2 and 4 periods respectively.
+Suppose now we're allocating 64 or 128 bytes of memory, then then 2 or 4 warps respectively will access the memory sequentially, i.e. 2 and 4 periods respectively.
 
 So, in order to avoid these bank conficts in 2D memory (of course, it is always possible to map a 2D array into 1D array, which is much easier to deal with), one should allocate 
 \textit{a bit more memory} than required. Take a look at the \autoref{bankconflicts2}: the two first figures (a \& b) show a 1D and 2D array memory access respectively. 
@@ -592,12 +629,10 @@ To do so, we replace \verb|__shared__ float Mat[BL_SIZE][BL_SIZE]|, with \verb|_
 have to access the same bank/memory address as the previous and the next bank. So, what one can do, is to allocate memory of size 33 rows. Thus, the threads, seeking for memory, will 
 access different banks(columns).
 
-The author does fully understand and does know that this is a quite complicated aspect, and one needs time to get used 
-to these concepts. It is also clear that these things are difficult \sout{or even impossible} to debug and track. In most cases, 
-the \textit{solution} is to simply benkchmark the execution of the program. 
-
-
-
+The author does fully understand and does know that this is a quite subtle aspect, and one needs time to get used 
+to these concepts. It is also clear that these things are difficult \sout{or even impossible} to debug and track, once the code is written, and the programmer 
+does not have any ideas of where to look for the performance issues. In most cases, 
+the \textit{solution} is to simply benkchmark the execution of the program, and consequently test the program with different configurations. 
 
 
 %https://stackoverflow.com/questions/16119943/how-and-when-should-i-use-pitched-pointer-with-the-cuda-api

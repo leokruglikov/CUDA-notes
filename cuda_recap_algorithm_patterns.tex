@@ -3,27 +3,25 @@
 Consider the situation, when we need to add all the array's elements together. In \verb|C++|, one could use 
 the STL algorithm \verb|accumulate()| function. In a more primitive implementation, we would do a single for-loop 
 and accumulate the results in one variable. The complexity of such an algorithm would then be about $O(n)$, where 
-$n$ - the length of the array. However, one could add some parallelism to this algorithm. At first iteration, what we would 
+$n$ - the length of the array. However, one could add some parallelism to this algorithm. 
+Indeed, at first iteration, what we would 
 do is to add the 0th element with the 1st, the 2nd with the 3rd, the 4th with the 5th, etc... Notice that 
-all of these additions ($\nicefrac{N}{2}$ additions) can be done in parallel. The next \textit{iteration}, would be 
+all of these $\nicefrac{N}{2}$ additions additions can be done in parallel (that is, each thread does one addition). The next \textit{iteration}, would be 
 summing the result of the sum of 0th and 1st with the sum of 2nd and 3rd, thus giving a total of 
-$\nicefrac{N}{4}$ additions. This algorithm looks like a log-scale complexity. 
-
-
-
+$\nicefrac{N}{4}$ additions (instead of $\nicefrac{N}{2}$ ) . 
+Therefore, the number of necessary divisions on the next step, will be the half of those, during the previous ones.
+As those divisions are performed in parallel, this algorithm looks like a log-scale complexity. 
 
 \begin{figure}
    \centering
    \begin{subfigure}[t]{0.45\textwidth}
         \centering
         \includegraphics[width=6cm]{pngs/reduce_global.jpg}
-        \caption{Fixed rod length and varying mass}
         \label{fig:static}
     \end{subfigure}
     \begin{subfigure}[t]{0.45\textwidth}
         \centering
         \includegraphics[width=6cm]{pngs/reduce_shared.jpg}
-        \caption{Fixed mass and varying rod length}
         \label{fig:dynamic}
     \end{subfigure}
 \label{fig:reduce}
@@ -33,7 +31,7 @@ $\nicefrac{N}{4}$ additions. This algorithm looks like a log-scale complexity.
 \subsubsection*{Global memory reduce}
 Let's first have a look at a \sout{not so} naive implementation of the discussed reduce algorithm on the GPU.
 Once again, we're looking at a simplified version of the code, without implementing memory allocation, copy, etc... 
-(note that in this case, we use simple global mamory with \verb|cudaMalloc()|) The host and device functions are given by
+(note that in this case, we use simple global mamory with \verb|cudaMalloc()|). The implementation of this is given by \autoref{listing:global_reduction}.
 
 
 \begin{listing}
@@ -56,6 +54,7 @@ for (int stride = 1; stride < size; stride *= 2){
 //main()
 \end{minted}
     \caption{Global memory reduction. \cite{tuomanen2018hands}}
+    \label{listing:global_reduction}
 \end{listing}
 
 \begin{wrapfigure}{R}{0.45\textwidth}
@@ -65,14 +64,15 @@ for (int stride = 1; stride < size; stride *= 2){
    \end{center}
    \vspace{-0.5cm}
    \captionsetup{justification=raggedleft}
-   \caption{The description of every iterationion, for the global memory 
+   \caption{The description of every iteration, for the global memory 
    reuction kernel. Note the how stride is doubling every iteration, 
    ,and how the elements are accumulating in the very first (0th) element of the output data. 
    One should understand, that the code works for arbitrary number of blocks, as we're working with global 
    memory, visible to all threads in all blocks}
    \label{fig:reduced_global_only}
 \end{wrapfigure}
-Okay, let's discuss the implementation. First in the host function, we define the number of blocks. 
+
+Okay, let's discuss the \autoref{listing:global_reduction}. First in the host function, we define the number of blocks. 
 In this case, this number is not so important. It would be important to optimize the execution, 
 by taking into account the notion of warps, etc... The important part is the loop in the host code and 
 the device kernel. We will try to do the debugger's job and inspect the steps. 
@@ -86,7 +86,7 @@ showed in \autoref{fig:reduced_global_only} (the case of size=8). Then, during t
 \textit{jumping} over 2 next elements, and adding them, in order to get the sum of $N_{stride}$ elements, and save them 
 into the \verb|data_out[0]|. Let me mention, that this process is illustrated in the image above \autoref{fig:reduced_global_only}.
 
-This algorithm is, maybe, not easy to understand, but it is very fundamental. Both the algortithm, and the 
+This algorithm is, maybe, not easy to understand, but is very fundamental parallel algorithm. Both the algorithm, and the 
 way of analyzing the problem. However, it can be optimized using the block's shared memory.
 
 
@@ -100,8 +100,6 @@ way of analyzing the problem. However, it can be optimized using the block's sha
    \caption{Reduce algorithm using shared memory.}
    \label{fig:shared_reduce}
 \end{wrapfigure}
-
-
 
 
 
@@ -127,7 +125,7 @@ For the first iteration, we're associating the variable \verb|int size| to be th
 number of elements to be reduced. In our case, it is $32$. The next declared variable \verb|int n_bl| is, 
 as the name suggests, the size of the block. As we're working with the shared memory, each shared memory 
 will be allocated for one specific block, as shown in figure. In our case, we've chosen \textit{nice} 
-numbers, so that \verb|n_thr + n_bl = size = 32|, with \verb|n_thr| - the number of threads per each block.
+numbers, so that \verb|n_thr * n_bl = size = 32|, with \verb|n_thr| - the number of threads per each block.
 On line $6$, we're finally invoking the kernel with the initial $8\times 4$ dimensions (the first 2 parameters in the angle brackets). 
 The 3rd parameter in the angle brackets is the size of shared memory, that will be assigned to each block. 
 We see this syntax for the first time. This is how we allocate the \textbf{dynamic shared memory}, which we will 
@@ -235,9 +233,9 @@ To attack these issues, one may use various techniques, potentially discussed in
 Some of these methods may be very tricky, sometimes requiring built-in CUDA features (unknown for us at the moment), and 
 sometime very \textit{primitive} techniques (e.g. \autoref{App.:Primitive operations})
 
-To be fully honest, there is almost never a way to get rid of complpetely of warp divergence.
+To be fully honest, there is almost never a way to complpetely get rid of warp divergence.
 However, it is possible to do small changes to reduce them. 
-In this case, we will follow a strategy, that has changed a bit of accessing the elements and 
+In this case, we will follow a strategy, that has changed a bit the access of the elements and 
 gather/reduce them together. Remember, in the shared memory implementation of reduce, we were 
 looking for elements, which are located next to each other. 
 We want to modify the memory access of threads, such that the pairs of elements are not necessarily next to each other. To do that, we are dividing the block in 2 parts, and we're adding (reducing) the 
@@ -250,16 +248,15 @@ And this process will be done at every iteration
 of the for loop in the kernel. Here we are doing nothing but a litteral reduction - \textit{Dividing
 the block in half, adding(or any arbitrary operation) the one-to-one elements. When done, 
 "throw" away the right block and perform the same reduce on the newly created block.}
-From the divergence perspective, one may notice that there is still a condition, that will potentially
-lead to warp divergence. Yes, indeed. However, looking at this condition, we can make a statement 
+From the warp divergence perspective, one may notice that there is still a condition, that will potentially
+lead to warp divergence. However, looking at this condition, we can make a statement 
 about \textbf{when} will this divergence occur. As the stride vary from \verb|blockDim.x| to 
 $0$ being every time divided by 2 (e.g. $64, 32, 16, 8, 4, 2, 1, 0$). The \verb|if| condition will be
 omitted \textbf{if and only if} the warp size is less than the stride. Thus, at iterations, when
 the stride > $size_{warp}$ no warp divergence will occur, as \textbf{all the threads will pass the condition and there won't be idle threads}. As the warp size is $32$, one can choose the most optimal block dimensions.
-Supposedly, the bigger the bloc dimension is, the less iterations will cause divergence, the better it is. 
+Supposedly, the bigger the bloc dimension is, the less iterations will cause warp divergence, the better it is. 
 
-thrust::reduce
-Personally speaking, this code/approach is much easier to understand and visualize, and in addition
+Personally speaking, this code/approach is much easier to understand and visualize than the previous ones, and in addition
 a bit faster. However, I wanted to roughly take some course/book's paths, where the reduction is 
 presented in this specific order.
 
