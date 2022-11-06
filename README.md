@@ -25,3 +25,8 @@ The author will do its best to add new chapters and section, as well as modify t
 - [ ] Add parallel algorithm, other than reduce.
 
 
+### Structure
+The document is written in LaTeX. The contents are divided into different modules, which are included into the 
+`cuda_recap.tex`. For compilation, LaTeX, together with all the necessary packages must be installed. The compilation is 
+done the usual LaTeX way, together with the flag for the minted package `pdflatex --shell-escpe cuda_recap.tex`.
+
