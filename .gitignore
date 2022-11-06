@@ -8,6 +8,7 @@
 *.toc
 *.bbl
 *.toc
+*.pyg
 _minted-cuda_recap/
 *.blg
 tstex_modules/
