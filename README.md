@@ -10,7 +10,7 @@
 ### Comments
 I want to share with you my personal notes on this topic. 
 
-<img src="pngs/extract_pdf.png" alt="extract_pdf" style="height: 1000px; width:1000px;"/>
+<img src="pngs/extract_pdf.png" alt="extract_pdf" style="height: 500px; width: 500px;"/>
 
 At the moment, 
 there are lot's of things to be completed and added, as initially, they were written for my personal use. 
