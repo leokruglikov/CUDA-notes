@@ -1,5 +1,0 @@
-\begin{Verbatim}[commandchars=\\\{\}]
-\PYG{l+s+se}{\PYGZbs{}c}entering
-   \PYG{n+nv}{\PYGZdl{}nvcc} \PYGZhy{}o main main.cu
-
-\end{Verbatim}

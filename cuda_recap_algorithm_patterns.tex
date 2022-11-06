@@ -5,12 +5,13 @@ the STL algorithm \verb|accumulate()| function. In a more primitive implementati
 and accumulate the results in one variable. The complexity of such an algorithm would then be about $O(n)$, where 
 $n$ - the length of the array. However, one could add some parallelism to this algorithm. 
 Indeed, at first iteration, what we would 
-do is to add the 0th element with the 1st, the 2nd with the 3rd, the 4th with the 5th, etc... Notice that 
-all of these $\nicefrac{N}{2}$ additions additions can be done in parallel (that is, each thread does one addition). The next \textit{iteration}, would be 
+do is add the 0th element with the 1st, the 2nd with the 3rd, the 4th with the 5th, etc... Notice that 
+all of these $\nicefrac{N}{2}$ additions can be done in parallel (that is, each thread does one addition). The next \textit{iteration} would be 
 summing the result of the sum of 0th and 1st with the sum of 2nd and 3rd, thus giving a total of 
 $\nicefrac{N}{4}$ additions (instead of $\nicefrac{N}{2}$ ) . 
-Therefore, the number of necessary divisions on the next step, will be the half of those, during the previous ones.
+Therefore, the number of necessary divisions in the next step will be half of those, during the previous ones.
 As those divisions are performed in parallel, this algorithm looks like a log-scale complexity. 
+
 
 \begin{figure}
    \centering
@@ -29,9 +30,9 @@ As those divisions are performed in parallel, this algorithm looks like a log-sc
 \end{figure}
 
 \subsubsection*{Global memory reduce}
-Let's first have a look at a \sout{not so} naive implementation of the discussed reduce algorithm on the GPU.
+Let's first have a look at a \sout{not-so-}naive implementation of the discussed reduce algorithm on the GPU.
 Once again, we're looking at a simplified version of the code, without implementing memory allocation, copy, etc... 
-(note that in this case, we use simple global mamory with \verb|cudaMalloc()|). The implementation of this is given by \autoref{listing:global_reduction}.
+(note that in this case, we use simple global memory with \verb|cudaMalloc()|). The implementation of this is given by \autoref{listing:global_reduction}.
 
 
 \begin{listing}
@@ -72,7 +73,7 @@ for (int stride = 1; stride < size; stride *= 2){
    \label{fig:reduced_global_only}
 \end{wrapfigure}
 
-Okay, let's discuss the \autoref{listing:global_reduction}. First in the host function, we define the number of blocks. 
+Okay, let's discuss the \autoref{listing:global_reduction}. First, in the host function, we define the number of blocks. 
 In this case, this number is not so important. It would be important to optimize the execution, 
 by taking into account the notion of warps, etc... The important part is the loop in the host code and 
 the device kernel. We will try to do the debugger's job and inspect the steps. 
@@ -82,11 +83,11 @@ memory, and the access is global.
 
 Suppose the size is $32$, partitioned into 1 block. Then for the first iteration, we'll get, 
 \verb|out[0] = [0]+[1]|, \verb|out[1] = [1]+[2]|, ... \verb|out[30] = [30] + [31]|. This is exactly the first iteration, 
-showed in \autoref{fig:reduced_global_only} (the case of size=8). Then, during the next iteration, we're 
-\textit{jumping} over 2 next elements, and adding them, in order to get the sum of $N_{stride}$ elements, and save them 
+shown in \autoref{fig:reduced_global_only} (the case of size=8). Then, during the next iteration, we're 
+\textit{jumping} over 2 next elements and adding them, in order to get the sum of $N_{stride}$ elements, and save them 
 into the \verb|data_out[0]|. Let me mention, that this process is illustrated in the image above \autoref{fig:reduced_global_only}.
 
-This algorithm is, maybe, not easy to understand, but is very fundamental parallel algorithm. Both the algorithm, and the 
+This algorithm is, maybe, not easy to understand, but is very fundamental parallel algorithm. Both the algorithm and the 
 way of analyzing the problem. However, it can be optimized using the block's shared memory.
 
 
@@ -104,7 +105,8 @@ way of analyzing the problem. However, it can be optimized using the block's sha
 
 
 \subsubsection*{Shared memory reduce}
-As we've discussed several times above, the shared memory access has low latency. The idea is thus 
+\label{subsub:shared_reduce}
+As we've discussed several times above, shared memory access has low latency. The idea is thus 
 to do a local copy of the data to each block. As the shared memory's size is limited, we \textbf{map} the 
 data pieces to each block (see figure).
 
@@ -117,7 +119,7 @@ to make things more illustrative. Trying to keep in mind both the illustration (
 \end{listing}
 
 We omit the \verb|main()| function and the host/device memory allocation/copy.
-Line $2$ declares the function, which will be calling the kernel. Line $3$ copies memory 
+Line $2$ declares the function, which will be calling the kernel. Line $3$ copies the memory 
 \verb|cudaMemcpyDeviceToDevice|. This is done in order to make sure we're working with the same memory locally allocated on the device.
 This is illustrated with the bottom blue arrow. 
 \paragraph*{First iteration}

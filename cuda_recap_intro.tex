@@ -1,22 +1,24 @@
 
 \section*{Author's preword}
 \label{disclaimer}
-These \textit{notes} are a kind of a collection of different articles from diverse resources on this topic. More precisely, the authors interpretation 
-of these. A big part of the code snippets 
-are also taken from different resources, 
-and has not always been tested. The author will do its best to try to cite the sources. 
+These \textit{notes} are a kind of a collection of different articles from diverse resources on this topic. More precisely, the author's interpretation 
+of them. A big part of the code snippets 
+are also taken from different resources. The author will do its best to try to cite the sources. 
 Therefore it is really a \textit{collage} of notes, articles, books on the CUDA programming.
 The author's main goal is to provide the most detailed possible explanation of 
-various code snippets, as well as try to explain the main features of CUDA programming.
+various code snippets, as well as try to explain the main features, concepts of CUDA programming, as well as the main differences between the classical programming.
 
 Note that this document was initially written for the author itself, who is a physics major 
-and is a fully self-taught guy in programming. 
+and is a fully \textit{self-taught guy} in programming. 
 For the author, it was a way of learning the topic and memorize 
-the important concepts of it. 
+the important concepts of it. Sometimes, in order to explain different concepts, analogies will be used. 
+Therefore, some terms will sometimes be used intercheangeably. Most importantly, some concepts, especially, when discussing architecture, 
+can be slightly erronous. This is due to the fact that, once again, the goal of this document is \textbf{not} to provide 
+an academically precise and correct course on the GPU's. 
 
-The goal of these notes is to \textbf{give us a good basic understanding of the 
-GPU architecture, and \underline{the most importantly,}, try to fully depict
-the most common examples of CUDA codes}.
+The goal of these notes is thus to \textbf{give us a basic understanding of the 
+GPU architecture, and \underline{most importantly,}, try to fully depict
+the most common examples of code snippets, using CUDA, that will run on the GPU.}.
 
 \section*{Dictionary}
 \label{section:dictionary}
@@ -38,26 +40,26 @@ the most common examples of CUDA codes}.
 \newpage
 
 \section*{Small introduction}
-If one wants to perform computations on the GPU, one must have a way to adress it. There are various
-API's developed. The biggest ones are the Khronos Group's OpenCL, Microsoft's Direct Compute, and the one 
-discussed here, the Nvidia's Compute Unified Device Architecture, or shortly - CUDA. Do not mix it up with 
+If one wants to perform computations on the GPU, one must have a way to address it. There are various 
+APIs developed. The biggest ones are the Khronos Group's OpenCL, Microsoft's Direct Compute, and the one 
+discussed here, Nvidia's Compute Unified Device Architecture, or shortly - CUDA. Do not mix it up with 
 OpenGL, which is a slightly different thing, as it operates more on the graphics functionality.
 
 
 When discussing the necessity of the GPU for computations, many come up with the example of the car and the bus \cite{habr_car_vs_bus}. 
-Suppose you need to transport people from a point $A$ to a point $B$. To solve this problem, you are 
+Suppose you need to transport people from point $A$ to a point $B$. To solve this problem, you are 
 given a car and a bus. What would be the most optimized way to transport these people? We introduce here
 the notion of throughput (bandwidth) and latency. The ability to perform a certain number of operations in a certain period of 
 time is the throughput, and the amount of time that is required to perform a single operation is the latency.
-In our analogy, the bus, having a smaller speed than the car, but a greater capacity, has a big latency but 
+In our analogy, the bus, having a smaller speed than the car, but a greater capacity has a big latency but 
 a big throughput. On the other hand, the car has a small latency and small throughput.
 
 
 So going back to our problem, we have that if the number of people to transport is significant, 
 then the wise way to transport them is to use the bus. However, if the number of people is small enough, 
-one should use the car, to get the small group of people faster to the point $B$. 
+one should use the car, to get the small group of people faster to point $B$. 
 In this analogy, the car is the CPU, and the bus is the GPU.
 
 I am convinced that after some examples of code using CUDA, the reader will understand, how powerful
-actually the GPGPU model is for certain tasks acomplishment. Like in our example with the bus and the car.
+actually the GPGPU model is for certain tasks' accomplishment. Like in our example with the bus and the car.
 

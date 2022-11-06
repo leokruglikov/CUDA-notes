@@ -1,6 +1,0 @@
-\begin{Verbatim}[commandchars=\\\{\}]
-\PYG{k+kr}{\PYGZus{}\PYGZus{}global\PYGZus{}\PYGZus{}}
-\PYG{k+kt}{void}\PYG{+w}{ }\PYG{n}{hi\PYGZus{}from\PYGZus{}gpu}\PYG{p}{()\PYGZob{}}
-\PYG{+w}{    }\PYG{n}{printf}\PYG{p}{(}\PYG{l+s}{\PYGZdq{}Hi from GPU}\PYG{l+s+se}{\PYGZbs{}n}\PYG{l+s}{, from thread id \PYGZpc{}d and block id \PYGZpc{}d\PYGZdq{}}\PYG{p}{,}\PYG{+w}{ }\PYG{n+nb}{threadIdx}\PYG{p}{,}\PYG{+w}{ }\PYG{n+nb}{blockIdx}\PYG{p}{);}
-\PYG{p}{\PYGZcb{}}
-\end{Verbatim}

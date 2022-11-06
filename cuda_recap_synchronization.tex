@@ -1,10 +1,10 @@
-
 \section{CUDA synchronization mechanisms}
 
-As we've discussed in the section on architecture, when writing kernels, we need always to think about the GPU's hardware, scheduling, etc...
-By now, with the basic examples we've considered only \textit{basic} operations. Indeed, the only API function we've used in the kernel is the \verb|__syncthreads()|. 
+As we've discussed in the section on architecture, when writing kernels, we always need to think about the GPU's hardware, scheduling, etc...
+By now, with the basic examples we've considered only \textit{basic} operations. Indeed, the only API function to synchronize execution, that we've used in the kernel is the \verb|__syncthreads()|. 
 This is a simple syncing mechanism, that ensures that all the threads \textbf{within the block} are 
-done before this barrier. This is block-level synchronization barrier.
+done before this function invocation. 
+%Thisubsub:shared_reduces is block-level synchronization barrier.
 
 \subsection{Cooperative Groups}
 
@@ -26,20 +26,19 @@ __device__ int reduce_sum(
     return val; //only thread 0 will return full sum
 }
 \end{minted}
-\label{coop_group}
-    \caption{This method, is \sout{almost} the same as the first, optimized version of the reduce 
-    algorithm, using the shared memory \autoref{}. Therefore, one must note that this reduce\_sum() method 
+    \caption{This kernel, is \sout{almost} the same as the first, optimized version of the reduce 
+    algorithm, using the shared memory (\autoref{subsub:shared_reduce}). Therefore, one must note that this reduce\_sum() method 
     must be called for the array temp*, located in the shared memory.}
+\label{listing:coop_group}
 \end{listing}
 
 
-Cooperative groups is a relatively new feature to the CUDA API.
+\textit{Cooperative groups} is a relatively new feature to the CUDA API.
 As the name suggests it, this feature enables us to group threads, with the 
 ability to perform common, collective operations (or simply collectives). We can also 
 perform synchronization between the threads, belonging to the same cooperative groups. 
-With these API features, one can simplify the code, thus avoiding common mistakes and make it more readable.
-For example, in the code snippet 
-\autoref{coop_group}, we perform the exact same algorithm as in \autoref{shatred_mem_optim1},
+With these API features, one can simplify the code, thus avoiding common mistakes and making it more readable.
+For example, in the code snippet \ref{listing:coop_group}, we perform the exact same algorithm as in the section on reduce algorithm,
 by using some utility of the CUDA API. In this case, the \verb|cooperative_groups::thread_group|
 class (do not pay attention to how we created this object and/or how it is declared).
 The \verb|thread_rank()| function gets the ID/rank of the thread within the thread group \verb|g| (the same way as \verb|threadId.x| within a block). 
@@ -48,8 +47,8 @@ will be done setting the \verb|val|, and the second to ensure that all threads a
 However, only the thread 0 will accumulate all the \verb|val|'s.\cite{blog_2020}
 
 \subsection*{Thread blocks}
-We've already seen the notion of a thread block many times. This notion was always quite \textit{abstract}. Indeed, while launching the kernel, we've 
-always kept the notion of thread blocks in our mind, but never actually accessed it. However, in newly introduced features, we can "access" the 
+We've already seen the notion of a thread block many times. This notion was always quite \textit{abstract} and implicit. Indeed, while launching the kernel, we've 
+always kept the notion of thread blocks in our mind, but never actually accessed it explicitly. However, in newly introduced features, we can "access" the 
 thread block explicitly. Remember the legacy \verb|__syncthreads()| function. 
 Well, syncing the \verb|this_thread_block()| does the same thing as the \verb|__syncthreads()|. Thus, there are several ways/semantics to synchronize the threads. 
 The following function calls are synonyms.
@@ -65,11 +64,11 @@ The following function calls are synonyms.
 \end{minted}
 \end{listing}
 
-One can also mention other synonyms \verb|dim3 threadIdx| $\equiv$ \verb|dim3 thread_index()| and \verb|dim3 blockIdx| $\equiv$ \verb|dim3 group_index()|. Thus one can easily replace 
+One can also mention other synonyms \verb|dim3 threadIdx| $ \equiv $ \verb|dim3 thread_index()| and \verb|dim3 blockIdx| $ \equiv $ \verb|dim3 group_index()|. Thus one can easily replace 
 these built-in keywords with these new methods, without any noticeable performance issues.
 
 \subsection*{Partitioning}
-For these cooperative groups, a partitioning feature is also avaliable. For instance, if 
+For these cooperative groups, a partitioning feature is also available. For instance, if 
 we've created a thread thread block, by invoking \verb|auto tb = this_thread_block()|,
 one can divide it into more small parts, for instance, into groups of 16 threads. 
 This is done using the \verb|cooperative_groups::partition()|, method, which takes the 
@@ -83,10 +82,10 @@ the thread's rank, \textbf{within the obtained thread\_group} (for instance, if 
 the thread block into groups of 16 threads and, by passing this object to a device function,
 print the \verb|thread_rank()|, method, we will see numbers varying from 0 to 15). 
 
-The utility of these features overall is that it is less easier to make errors. Indeed, 
+The utility of these features overall is to reduce the errors in code. Indeed, 
 the NVidia documentation states that the usage of these features significantly reduces the 
-risk of deadlocks. The concept of deadlocks is probably well known to the reader. This is 
-a typical situation, when we don't want different threads to access a critical section, and 
+risk of deadlocks. The concept of deadlocks is probably well-known to the reader. This is 
+a typical situation when we don't want different threads to access a critical section, and 
 ask them to be synchronized before accessing them. Consider the two pieces of code:
 
 \begin{listing}[!ht]
@@ -122,36 +121,35 @@ __global__ void parallel_kernel(float *x, int n)
 \label{nodeadlock}
 \end{listing}
 
-\newpage
-In a nutshell, we clearly see a deadlock in the first piece of code, as 
+We clearly see a deadlock in the first piece of code, as 
 there are only threads with ID's less than the half of the block dimension, which will 
-enter the if condition. Those threads will perform their piece of code independently, 
+enter the \verb|if| condition. Those threads will perform their piece of code independently 
 and then will wait for all the other threads in the block to be completed and 
 synchronized. This is a big issue, as there are threads, which will never start the \verb|sum()|
-kernel and will just sit up there, waiting for those, who have. So the two chuncks of threads
-will just wait for each other. 
+kernel and will just sit up there, waiting for those, who have. So the two chunks of threads
+will just sit and wait for each other infinitely.
 
 This is why one may find an application for the previously discussed primitives. 
 In the second piece of code, one call the method \verb|sum()| with a thread block. However, 
-we could have divided into groups, using either CUDA functionality discussed above, 
-\textbf{and only synchronize that block}, which, we are sure, will by run by all threads in 
+we could have divided it into groups, using the CUDA functionality discussed above, 
+\textbf{and only synchronize that block}, which, we are sure, will be run by all threads in 
 the block. 
 
 \subsection*{Warp synchronizations}
 %https://blog.csdn.net/jqw11/article/details/103071556
-While programming with CUDA, one never gets tired to tired to think about warps, and 
-how to optimize their execution. I do agree that it is not an easy task, to think of it, 
+While programing with CUDA, one never gets tired to think about warps, and 
+how to optimize their execution. I do agree that it is not an easy task, to think of it 
 while doing even some basic operations. The new NVidia architectures and new versions of the
-CUDA API, provide a simple way to navigate through these concepts.
+CUDA API, provides a simple way to navigate through these concepts.
 
-We have discussed a lot the advantages of the shared memory (e.g. for the speed and efficiency
-of the reduce algorithm). However, the new utilities give us a more faster, or even a more
+We have discussed a lot of the advantages of shared memory (e.g. for the speed and efficiency
+of the reduce algorithm). However, the new utilities give us a faster, or even more
 local way to perform some operations. Remember, shared memory is block-local memory. 
 Remember also that every thread has some kind of register to store small intermediate 
 values while performing a kernel, for example, when
 we used to store the local thread ID. 
-The so called \textit{warp level synchronization primitives}
-allow us to access a certain thread's local register from an another thread,
+The so-called \textit{warp level synchronization primitives}
+allow us to access a certain thread's local register from an-another thread,
 \underline{as long as they are in the same warp}, without 
 the usage of the shared memory. Again, there are many things to keep in mind, 
 but if such a function is called, it is doing everything \textit{atomically}, 
@@ -162,10 +160,10 @@ warp. We therefore introduce here the notion of the
 
 
 \paragraph{A little disclaimer: }There are various Warp-level primitive functions. We will note that many function's
-name are similar, and only differ by the postfix \verb|_sync()|. For instance, 
-\verb|__shfl_xor()| and \verb|__shfl_xor_sync()|. Indeed, the ones with the \verb|_sync()|
-postfix is a improvement of the former. It is recommended to use the newer version instead.
-I will not go into great details between these differences. 
+names are similar, and only differ by the postfix \verb|_sync()|. For instance, 
+\verb|__shfl_xor()| and \verb|__shfl_xor_sync()| \cite{chinese_sync}, \cite{conference_gpu}. Indeed, the ones with the \verb|_sync()|
+postfix are an improvement of the former. It is recommended to use the newer version instead.
+I will not go into great detail about these differences. 
 I will just mention that there are differences in parameters
 \footnote{Frankly speaking, the author hasn't seen this additional parameter 
 being used in a very extensive way. This \textit{extra} parameter is often replaced with 
@@ -173,7 +171,7 @@ some kind of hardcoded value}(see further examples).
 
 
 The \verb|__activemask()| primitive/function is actually not a synchronization 
-mechanism, but more of a filtering mechanisms. This function returns the \textit{indices}
+mechanism, but more of filtering mechanisms. This function returns the \textit{indices}
 of the active threads in the warp, where it was referenced from\footnote{One can think 
 of the mask as the python's numpy feature, while doing a filter : {\fontfamily{pcr}\selectfont arr[:]<1.0}, which 
 will return an array of booleans, which will be used to access later the elements of interest}. 
@@ -191,12 +189,12 @@ Inactive threads are represented by 0 bits in the returned mask.
     }
 \end{quote}
 
-So let's have a quick look and example at what did NVidia provide us with 
+So let's have a quick look and example of what did NVidia provide us with 
 \footnote{There are many such primitives available. As usual, the best way to get information about such 
 CUDA functionality, is to look it up in the NVidia's developer's guide \cite{center}.}
 
 \begin{itemize}
-    \item \verb|__shfl_sync()| or in previous CUDA versions \verb|__shfl()| is a tool, to "broadcast", or "spread"
+    \item \verb|__shfl_sync()|, or, in previous CUDA versions, \verb|__shfl()| is a tool, to "broadcast", or "spread"
         a certain value from a certain thread (identified with its lane) to all others in the warp. For example, 
         in a certain warp, all the threads have a variable \verb|int b = //some random int|, unique for all 
         the threads. And I want all these thread's variable \verb|b|, to be the same as the one in the thread 
@@ -227,7 +225,7 @@ fundamental part of the execution scheduling model.
 
 
 \subsubsection*{Atomics}
-When learning multithreaded programming, one of the first notions, that one must understand
+When learning multithreaded programing, one of the first notions, that one must understand
 is the notion of atomics or atomic operations \footnote{Intuitively, 
 this comes from the word \textit{atom}. This is a greek word, meaning something 
 like \textit{uncuttable}, \textit{undivisible}. In fact, this is almost exactly, what an atomic operation corresponds to 
@@ -243,18 +241,18 @@ such as \verb|atomicAdd()|, \verb|atomicSub()|, \verb|atomicMin()|, ...
 (for more: \cite{center}).
 All these operations have the same (or almost same) signatures: 
 \verb|int <or any primitive type> <function_name>(int* old_adress, int value)|
-So these functions take the old adress as the first parameter (for example, the address of the value, we want to add to) and 
+So these functions take the old address as the first parameter (for example, the address of the value, we want to add to) and 
 the value as the second. The function thus performs an arithmetic or logical operation atomically, 
-and stores the result in the old adress. It also returns the value.
+and stores the result in the old address. It also returns the value.
 
 
-The atomic operations are however very expensive, as the scheduler must perform sequentialize the memory access. 
-It is thus very advisable to use these operations, only when needed.
+The atomic operations are very expensive, as the scheduler must perform sequential memory access. 
+It is thus very advisable to use these operations, only when needed (just as in usual \verb|C++| code).
 For example, let's say we've performed some kind of reduction on multiple blocks locally. 
 We know that if we've used some shared of memory on this reduction, one must in addition add the block results, to 
 get the full answer of our reduction. One way to do that is to force an atomic operation in all blocks, so they store it 
-in the first address of the global memory, that we will later \textit{consume} from the CPU. 
-So if one  suppose that we've accumulated the thread-local reduce into \verb|sum| and the pointer to the 
+in the first address of the global memory, which we will later \textit{consume} from the CPU. 
+So if one  supposes that we've accumulated the thread-local reduce into \verb|sum| and the pointer to the 
 initial data \verb|g_out|, we would do something like
 
 \begin{minted}[frame=single]{cuda}
@@ -267,15 +265,15 @@ initial data \verb|g_out|, we would do something like
 \section{Streams}
 \label{sec:streams}
 \subsection{Concept of streams}
-CUDA streams is an another fundamental concept that we've used previously in an implicit manner.
-Indeed, let me provide an another example using C++: when a "Hello World" programm is written in C++, 
+CUDA streams is another fundamental concept that we've used previously in an implicit manner.
+Indeed, let me provide another example using C++: when a "Hello World" program is written in C++, 
 no one cares about the thread usage. We do not create a "main" thead, when printing a character to 
-the standart output. In the context of the CUDA API, \textbf{any} programm is by definition multithreaded. 
-Therefore the analogy between the \textit{usual} C/C++/Python/... and a GPU programm does not make sense.
+the standart output. In the context of the CUDA API, \textbf{any} program is by definition multithreaded. 
+Therefore the analogy between the \textit{usual} C/C++/Python/... and a GPU program does not make sense.
 The stream concept is more of a thread \textbf{over the GPU threads}. 
 By now, all the programs we've considered were launched in one single CUDA stream. So one can launch a 
-programm (e.g. a simple vector addition) in one stream, which will be performed in parallel. However one can 
-add a second vector addition programm, which will be done in parallel, with the first vector addition.
+program (e.g. a simple vector addition) in one stream, which will be performed in parallel. However one can 
+add a second vector addition program, which will be done in parallel, with the first vector addition.
 
 
 
@@ -296,35 +294,22 @@ Let's try to explicitly create a stream and look at its initialization syntax:
 
 Therefore to create the CUDA stream, one must first initialize the stream, then create the stream, i.e. 
 allocate the memory via the \verb|cudaStreamCreate()| method by passing the pointer of the stream. 
-In order to call the kernel and make it run in a particular stream, one pass it as the last parameter in the angle brackets.
-If nothing is passed in the in the angle brackets for the stream, the default stream is used.
+In order to call the kernel and make it run in a particular stream, one passes it as the last parameter in the angle brackets.
+If nothing is passed in the angle brackets for the stream, the default stream is used.
 
-The simplest usage example of cuda streams is when one would want to concecutively call a certain kernel multiple times 
+The simplest usage example of CUDA streams is when one would want to consecutively call a certain kernel multiple times 
 (for example N times). 
 the way to do it using the default stream is to simply loop N times and call the kernel at every iteration.
-The way to do it using streams, is to create an array of streams and call the kernel by assigning it to different streams.
-The kernels will then be run in parallel without waiting the previous kernel return. The execition of the kernels 
-So these functions take the old adress as the first parameter (for example, the address of the value, we want to add to) and 
+Keep in mind one important property of the default stream - it is by default sequential and can not overlap with other streams.
+The way to do it using streams is to create an array of streams and call the kernel by assigning it to different streams.
+The kernels will then be run in parallel without waiting for the previous kernel to return. The execution of the kernels 
+So these functions take the old address as the first parameter (for example, the address of the value, we want to add to) and 
 the value as the second. The function thus performs an arithmetic or logical operation atomically, 
-and stores the result in the old adress. It also returns the value.
+and stores the result in the old address. It also returns the value.
 
-
-The atomic operations are however very expensive, as the scheduler must perform sequentialize the memory access. 
-It is thus very advisable to use these operations, only when needed.
-For example, let's say we've performed some kind of reduction on multiple blocks locally. 
-We know that if we've used some shared of memory on this reduction, one must in addition add the block results, to 
-get the full answer of our reduction. One way to do that is to force an atomic operation in all blocks, so they store it 
-in the first address of the global memory, that we will later \textit{consume} from the CPU. 
-So if one  suppose that we've accumulated the thread-local reduce into \verb|sum| and the pointer to the 
-initial data \verb|g_out|, we would do something like
-
-\begin{minted}[frame=single]{cuda}
-    if(this_thread_block().thread_rank()==0){
-        atomicAdd(&g_out[0], sum);
-    }
-\end{minted}
 
 \subsubsection{Asynchronous streams}
+\label{subsub:async_streams}
 
 We've already mentioned the asynchronous memory transfer mechanism, when discussing the memory models (see \ref{subsub:async_mem}).
 Let's get back to the same example, and illustrate in more detail on what was happening in the codes.
@@ -342,11 +327,11 @@ Let's get back to the same example, and illustrate in more detail on what was ha
   \end{minted}
   \label{fig:async_mem_streams}
 \end{listing}
-\end{itemize}
+%\end{itemize}
 
 Without the streams and the asynchronous memory copy, all the operations invoked in the loop would have been sequential. Suppose 
 that one of requirements is not fulfilled. That is, suppose one replaces the \verb|cudaMemcpyAsync()| with something else, and/or remove the stream functionality.
-Then the iteration of \verb|i=1| will wait for the \verb|i=0| iteration and so on (see \ref{fig:async_mem_streams}).
+Then the iteration of \verb|i=1| will wait for the \verb|i=0| iteration and so on.
 
 \begin{figure}
   \centering 
@@ -355,7 +340,7 @@ Then the iteration of \verb|i=1| will wait for the \verb|i=0| iteration and so o
 \end{figure}
 
 One may see that the sequential version does not fully use the potential of the GPU. That is, some of the memory 
-transfer mechanisms are waiting for others to finish. To solve this problem, one use the asynchronous memory version (\ref{fig:async_mem_streams}).
+transfer mechanisms are waiting for others to finish. To solve this problem, one uses the asynchronous memory version.
 In this case, the execution pipeline would look like that:
 
 \begin{figure}
@@ -365,13 +350,26 @@ In this case, the execution pipeline would look like that:
   \label{fig:fully_async_mem}
 \end{figure}
 
-Note that this \ref{fig:fully_async_mem} pipeline is not always true. That is, based on different architectures, 
+Note that this \autoref{fig:fully_async_mem} pipeline is not always true. That is, based on different architectures, 
 different results can be expected. For example, some of the versions have only a single memory copy and kernel engines. 
 This implies that the async functionality does not make sense for these versions (note that these versions are not very common anymore).
 
+Okay, but what if we want to not only parallelize the CUDA API calls for memory copy, but also the kernels? 
+Suppose we're calling two kernels sequentially in our host code. Then they will run sequentially, that is, the second kernel call will wait for the first to 
+return, before getting launched \footnote{
+ This is not fully true. Indeed, by default, the host is asynchronous with the kernel calls. The host "does not care", whether and when will the 
+ kernel return - it's not his responsability. This is the exact reason, why is the very beginning, we were calling a special function 
+ {\fontfamily{pcr}\selectfont cudaDeviceSynchronize()}, when we knew we were done with the GPU code. 
 
-
-
-
-
-
+ What I meant here, by \textit{return}, is that, in fact, it is the default stream, (that the kernel has been launched on), which is sequential, and will wait for the previous kernel to return.
+}
+. This case is fully ok, if one knows that the kernel is extremely efficient, such that it takes 100\% of our GPU's resources, memory, etc...
+But what if we somehow know that it is not the case, and we want to parallelize 2 kernels, which each take less than 50\% of our GPU's resources? 
+This is once again where the streams will come into play. 
+It is clear that if we launch two such kernels in the same stream, the calls will not be parallel. Thus, we would need two streams, so that each kernel is assigned to a separate one.
+The subtle thing here is that in order for this to work, one needs to \textbf{explicitly} create 2 streams and \textbf{explicitly} assign a kernel to each of them. 
+What is meant here, is that the default stream will not do the job. As remember, the default stream is by default sequential. This is a simple small detail, that one needs to take int account, when 
+making our code parallel.
+Unfortunately, it is not it. If we do as we've just said, that is, to create two \textbf{separate} streams and pass two kernels to it (not the default one), the kernels will still run sequentially.
+In order to make the stream overlap for kernel calls, one must create them with \verb|cudaStreamCreateWithFlags()| function. This function has two parameters - the pointer to the stream (exactly as the \verb|cudaStreamCreate|), 
+and a flag. In our case, as we want them to be able to overlap with each other, we will pass the flag \verb|cudaStreamNonBlocking| \cite{streams_best_practices}. 
