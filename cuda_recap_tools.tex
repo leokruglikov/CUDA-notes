@@ -1,0 +1,151 @@
+\section{Programming tools}
+We have seen that there are many subtleties in the GPGPU CUDA programming. 
+Indeed, when I first discovered GPU programming, the concept of scheduling 
+a process on the big number of threads was new to me. It is quite hard to 
+debug these applications. The processes are happening on a very low-level scale. 
+Often, algorithms to be implemented, are complex enough, to have multiple ways to implement them.
+This is where it gets interesting and hard. We all know that the process of debugging 
+and profiling a program/software is a huge part of the development. 
+Debugging a sequential program is already not easy (especially if it implements some kind of parallelism). 
+You can imagine, how hard CUDA programs are to debug. In order to debug a plain \verb|C/C++| program, we use 
+\verb|gdb|. For CUDA programs, we will use \verb|CUDA-gdb|, which is available in the installed CUDA toolkits. 
+Apart from debugging on a low level, we would also to have an overview of the overall program pipeline. For that, 
+we do profiling. The legacy NVidia's tool for profiling is the \verb|nvprof|, which comes in both cli and ui versions.
+However, it has been replaced by 2 tools (also coming in cli and UI versions) - NSight Systems and NSight Compute.
+They are invoked with \verb|nsys| or \verb|nsys-ui| and \verb|ncu| or \verb|ncu-ui| respectively.
+\textit{Note: The section here will be kind of a "soup" of different additional tools, that are interesting and, 
+in a way, necessary to know in order to successfully start the CUDA programming journey.}
+
+\subsection{Handling errors}
+Before we start to look into different tools that a CUDA programmer should be familiar with, one first must learn how 
+to handle errors, when CUDA API calls are invoked. Suppose you're allocating memory on the host, using, let's say \verb|cudaMalloc()|.
+What if some kind of error happens during this process. It is not guaranteed that the program will throw an error.
+The function \verb|cudaMalloc()| returns a \verb|cudaError_t|, which is a part of a CUDA errors enum. 
+
+Another way to access the error and/or the error code is the \verb|cudaGetLastError()|. 
+This function returns the last error produced by any of the CUDA runtime calls in the same host thread, 
+and resets it to \verb|cudaSuccess|. A string can also be retrieved from the CUDA error code. This can be 
+done with \verb|cudaGetErrorString(cudasError_t err)|.
+Let's have a look at a very simple example at \autoref{listing:error}.
+
+\begin{listing}[ht!]
+\begin{minted}[frame=single, linenos=true]{cuda}
+cudaError_t status;
+status = cudaMalloc((void**)d_ptr, size*sizeof(float));
+
+if(status != cudaSuccess){
+  char* err_str[1024];
+  err_str = cudaGetLastError(status);
+  std::cerr<<"Error occured"<<std::endl;
+  std::cerr<<err_str<<std::endl;
+  return (int)status;
+}
+  
+\end{minted}
+\caption{Retrieving error codes from the CUDA runtime API.}
+\label{listing:error}
+\end{listing}
+
+
+\subsection{Events}
+
+Another thing we would want to do, related to debugging and profiling is to trace different events/milestones that our code 
+will go through. What I mean by tracing is to \textit{see/follow}, what our code is doing, step by step. It is very useful, because, 
+as we've already mentioned, the parallel GPU applications are quite hard to debug, in the way we're doing it with plain \verb|C/C++| code.
+This gives us an additional tool to debug, trace and benchmark CUDA code.
+
+
+\begin{listing}[ht!]
+\begin{minted}[frame=single, linenos=true]{cuda}
+  cudaEvent_t start_evnt;
+  cudaEvent_t stop_evnt;
+
+  //memory allocation on host, device
+  //memory copy initialization, etc...
+
+  //record the start event 
+  cudaEventRecord(start_evnt, stream);
+  kernel_to_benchmark<<<NG, NT, 0, stream>>>();
+
+  //record the stop event
+  cudaEventRecord(stop_evnt, stream);
+  //wait for the event to be synced (done)
+  cudaEventSynchronize(stop_evnt);
+
+  float miliseconds = 0;
+  cudaEventEllapsedTime(&miliseconds, start, stop);
+  std::cout<<"Time elapsed given by "<<miliseconds\
+    std::endl;
+
+\end{minted}
+\caption{The code is quite simple to understand. On line $2$ and $3$, we're creating the 2 CUDA events,
+which will keep track of flags, that we will set. On line $7$, we are enqueuing the start event into the stream, which will stick to the provided stream.
+Then we're calling the kernel with the specified stream, and once it is returned (we know that the function/kernel calls on the host are sequential), we are recording 
+the stop event, and on lines $15$ and $16$, we're measuring the elapsed time between two event registration. There is however a call on line $13$, that may look unfamiliar.
+We will discuss it shortly.\cite{cuda_performance_metrics}}
+\end{listing}
+
+The mean, through which, we're implementing these concepts are already familiar \textbf{streams} and \textbf{events} (CUDA streams and CUDA events).
+We've seen that a CUDA program can be parallel at the kernel execution level (we've discussed threads, blocks, grouping, etc...), as well as on 
+the \textit{device} level. What I mean here, is that one can launch CUDA functions, such as the \verb|cudaMemcpyAsync()|, in parallel. These asynchronous 
+functions will be scheduled automatically by the CUDA scheduling mechanism, and will perform asynchronously.
+The CUDA event is a CUDA type \verb|cudaEvent_t|, which helps to control the CUDA stream execution.
+The events can be considered as some kind of flags/points living in the stream execution timeline. 
+The way the events can be used is for example benchmark the execution time of the kernel, by creating 2 flags in a certain stream. 
+The first flag will be \textit{registered} as soon as it was created, and the second flag will be \textit{registered}, once the 
+kernel that we want to benchmark has been completed and returned. Then we have two events that have been registered at different 
+moments of time in the specific stream, and we can take the difference between them \cite{cuda_events}.
+Let's have a look at a simple example of using CUDA events as a benchmarking technique.
+
+The events are not only used for performance metrics, as in the code snippet above \cite{cuda_performance_metrics}, but also for synchronizations between streams.
+Indeed, using the \verb|cudaEventRecord()|, one can enqueue the event into a stream, and further refer to it. 
+We manipulate the event/stream manipulations using three methods \cite{streams_best_practices}:
+\begin{itemize}
+  \item {\fontfamily{pcr}\selectfont cudaEventQuery(event)} returns {\fontfamily{pcr}\selectfont CUDA\_SUCCESS}, if the event passed as the parameter has occurred (this could be interesting for some kind of conditional waiting).
+  \item {\fontfamily{pcr}\selectfont cudaEventSynchronize(event)} will block the \textbf{host}, until all CUDA calls are completed.
+  \item {\fontfamily{pcr}\selectfont cudaStreamWaitEvent(stream, event)} will block the stream until the event will occur. Note that this will not block the host, and this function will block only those calls, launched after this function call.
+\end{itemize}
+
+
+\subsection{Other tools} 
+\subsubsection{PTX}
+Programming languages have different levels of abstraction and different levels of closeness to the hardware. 
+I think we can all agree that on of the approximate rankings in terms of \textit{low-leveliness} would be 
+\verb|Python| $\xrightarrow[]{}$ \verb|Java| $\xrightarrow[]{}$ \verb|C/C++| $\xrightarrow[]{}$ \verb|Assembly| $\xrightarrow[]{}$ \verb|Machine/Hardware code|.
+Don't judge this classification too strictly, as this is a more intuitive rank, mostly based on my opinion. 
+When writing \verb|C/C++| code, it gets translated to Assembly, then to machine code, which gets interpreted by the processor. 
+You may imagine that the GPU understands a slight variation of this Assembly language.
+
+Indeed, the equivalent Assembly for the CUDA GPU is the PTX \footnote{PTX stands for Parallel Thread Execution, and is not really a language. It is more of a proprietary 
+instruction set (see sources \cite{ptx_nvidia}, \cite{ptx_wiki})}.
+Despite being very proprietary, it may however be very useful to sometimes inspect the PTX code, even for a better understanding 
+of how the in-thread code works. All the extensive information on PTX is available in the CUDA developers guide \cite{ptx_nvidia}.
+However, I must mention, how to obtain a PTX code from a \verb|.cu| file(s). To do that, we invoke the CUDA's nvcc: 
+
+\begin{minted}[frame=single]{zsh}
+$ nvcc --ptx <filename>.cu
+\end{minted}
+
+
+
+\subsubsection{Profilers}
+\footnote{The profiling aspect is extremely important in development. The process can be very complex.
+However, I will unfortunately not discuss the extremely rich features of the different tools of it, as I have not used them extensively (only the most basic features).
+Once we know how to launch them, it is possible to discover the features of these tools empirically. Also, as with several notions discussed in these notes,
+there is no extensive documentation. However, with these tools, it is possible to read the {\fontfamily{pcr}\selectfont man} documentation, which may be very helpful, together with Googling.}
+A very important part of CUDA programming is the use of \sout{not-so-}external tools to profile CUDA code. NVidia provides 
+developers with tools to profile execution of a program. The legacy tool for profiling is the NVidia profiling tool - nvprof.
+This tool is still often described in the literature, as might often be helpful. Indeed, the author has always used it as a profiler, when writing 
+code. Nvprof is both a command line and a GUI tool. In order to make a program to be \textit{debuggable}, one must pass flags, when compiling it. 
+The \verb|-G|, when compiling and creating the CUDA executable, lets us fully use the CUDA NSight Compute tool to debug and profile the program. 
+\footnote{As mentioned many times, The goal is to not give a precise detailed course on CUDA tools, rather provide a path with different possibilities, which can be looked further into through sources \cite{nsight_cern}.}
+\textit{Note: The NVidia profiling tools is an extremely important and rich tool to debug CUDA programs. I could have spent at least half of the 
+lenght of the notes describing its features and how to profile them. Instead, as for almost any programming guide/book, it targets one specific aspect or goal. 
+The same goes for this one - to provide main possibilities regarding CUDA programming}.
+
+
+
+
+
+
+

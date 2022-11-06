@@ -9,3 +9,5 @@
 *.bbl
 *.toc
 _minted-cuda_recap/
+*.blg
+tstex_modules/
