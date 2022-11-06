@@ -10,7 +10,7 @@
 ### Comments
 I want to share with you my personal notes on this topic. 
 
-<img src="pngs/extract_pdf.png" alt="extract_pdf" style="height: 100px; width:100px;"/>
+<img src="pngs/extract_pdf.png" alt="extract_pdf" style="height: 1000px; width:1000px;"/>
 
 At the moment, 
 there are lot's of things to be completed and added, as initially, they were written for my personal use. 
@@ -21,7 +21,7 @@ The author will do its best to add new chapters and section, as well as modify t
 ![The pdf document](cuda_recap.pdf "notes on cuda") and the source LaTeX code - `cuda_recap.tex`.
 
 ### ToDo's 
-- [] Check spelling/grammar.
-- [] Add parallel algorithm, other than reduce.
+- [ ] Check spelling/grammar.
+- [ ] Add parallel algorithm, other than reduce.
 
 
