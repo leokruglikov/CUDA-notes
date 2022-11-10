@@ -104,14 +104,6 @@
 %\end{itemize}
 %
 
-\section{Appendix}
-\subsection*{Improving with primitive operations}\label{App.:Primitive operations}
-The modulo operation \verb|%| is expensive for an arithmetic operation. One could replace it 
-by something much easier for the GPU architecture to execute. In this case, with a bit of 
-knowledge of binary number representation, we can verify that \verb|if( (id_x%(stride*2) ) == 0)| is 
-equivalent to \verb|if( (id_x&(stride*2 -1) ) == 0)|. It would impossible for me to come up with this small 
-optimization on my own. Maybe for CS majors, it is evident.
-
 \newpage
 \bibliography{citation}
 \bibliographystyle{plainurl}
