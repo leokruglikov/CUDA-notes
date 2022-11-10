@@ -193,7 +193,19 @@ So let's have a quick look and example of what did NVidia provide us with
 \footnote{There are many such primitives available. As usual, the best way to get information about such 
 CUDA functionality, is to look it up in the NVidia's developer's guide \cite{center}.}
 
+
 \begin{itemize}
+    \item \verb|__all_sync()|, or in previous CUDA versions, \verb|__all()|, being now deprecated. The signature of this function is \verb|int __all_sync(unsigned mask, int predicate)|, 
+      where \verb|mask| is the filtering mechanism. Based on this filter, only threads, which 
+    fulfill it will be eligible to get eventually syncrhonized. This passed \verb|mask| 
+  can be the result from, for example, the \verb|__activemask()| function. The \verb|predicate| is the 
+    condition, that will be evaluated in all threads, that have passed the filter condition. 
+    The function \textsl{will return non-zero if and only if the predicate evaluates non-zero to \textbf{all} of them} \cite{center}.
+  \item \verb|__any_sync()| is a similar version, having the same signature as the 
+    \verb|__all_sync()|. But the difference is that \textsl{the function will return non-zero if and only if the predicate evaluates non-zero to \textbf{any} of them} \cite{center}.
+  \item A more complex function, which gives more information, about the evaluation of the predicate,
+    it the \verb|__ballot_sync()|. The signature of this function is \verb|unsigned __ballot_sync(unsigned mask, int predicate)|. The difference between this function and the previous ones, 
+    is that \textsl{the function returns an integer, whose N'th bit is set if and only if the predicate evaluates to non-zero for the N'th thread of the warp, and the N'th thread is active}. \cite{center}.
     \item \verb|__shfl_sync()|, or, in previous CUDA versions, \verb|__shfl()| is a tool, to "broadcast", or "spread"
         a certain value from a certain thread (identified with its lane) to all others in the warp. For example, 
         in a certain warp, all the threads have a variable \verb|int b = //some random int|, unique for all 
@@ -209,13 +221,30 @@ CUDA functionality, is to look it up in the NVidia's developer's guide \cite{cen
         that can be displayed in binary notation (all the 32 bits are 1, thus we're saying that all the threads are active).
 
     \item \verb|__shfl_up_sync()| or in previous CUDA versions \verb|__shfl_up()| is a function to 
-        shift the values of the warp by an offset. For instance, let's say that in the warp, I want 
+        shift the values of the warp by an offset, with a lower line ID. For instance, let's say that in the warp, I want 
         the 4'rd thread to have the value from 0'th thread, the 5'th thread the value of the 1'st, the 6'th 
-        thread the value from the 2'nd thread, etc ... Then we would want to use the \verb|__shfl_up_sync()| 
+        thread the value from the 2'nd thread, etc ... (from higher id to lower) Then we would want to use the \verb|__shfl_up_sync()| 
         function, with the same parameters as in the \verb|__shfl_sync()| function described above.
     \item \verb|__shfl_down_sync()| Is the same idea as the \verb|__shfl_up_sync()|. The difference is that 
-        we would use it if we wanted e.g. the thread 29 to have the value 31. (see figure for better understanding).
+        we would use it to shift from higher to lower. This is the classical mechanism to perform a reduce. The reduce will performed 
+        on a warp level (see \autoref{fig:shfl_down_reduce}). 
 \end{itemize}
+
+\begin{figure}
+  \centering
+  \includegraphics[width=0.8\textwidth]{pngs/shfl_down_reduce.jpg}
+  \caption{The implemented reduce algorithm using the shuffle-down method. 
+  Note that this example is warp local. Thus it is impossible to use this mechanism for bigger arrays. 
+  However, this example illustrates well the idea of shuffling within a warp. In addition, it is possible 
+to use this concept for greater arrays, by breaking them down into simpler, warp-level arrays. 
+In this example, for illustration's simplicity's sake, 
+I've supposed that the warp is of size 16, instead of the correct value of 32. The first argument passed in the 
+function is the mask, which is -1 in hex notation, meaning that this addresses all the threads in the warp. The next arguments 
+is the value to be added and the offset to the value, of the second thread. The last argument is the value of the warp size. In this case, 
+it is 16 (by default it is 32). Other synchronization functions can be used to achieve a similar goal. For example the Xor shuffle. 
+The geometric interpretation will however be different. \cite{giles_warp_nodate}, \cite{armour_warp_nodate}}
+  \label{fig:shfl_down_reduce}
+\end{figure}
 
 These primitives come in various shapes and forms. It would take quite a time
 to discuss them all here. The idea for them all, however, follows quite well the 
