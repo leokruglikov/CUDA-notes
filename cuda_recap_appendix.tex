@@ -1,0 +1,61 @@
+\section{Appendix}
+\subsection*{Improving with primitive operations}\label{App.:Primitive operations}
+The modulo operation \verb|%| is expensive for an arithmetic operation. One could replace it 
+by something much easier for the GPU architecture to execute. In this case, with a bit of 
+knowledge of binary number representation, we can verify that \verb|if( (id_x%(stride*2) ) == 0)| is 
+equivalent to \verb|if( (id_x&(stride*2 -1) ) == 0)|. It would impossible for me to come up with this small 
+optimization on my own. Maybe for CS majors, it is evident.
+
+\subsection*{Warp level filtering and syncronization}
+Let's have a look at three functions for warp-local syncronizations - \verb|__all_sync()|, \verb|__any_sync()| and \verb|__ballot_sync()|.
+The aim of the piece of code is to show the working principle of these functions, with made-up examples.
+\begin{code}
+\inputminted[frame=single, framesep=1mm, breaklines, linenos=true]{cuda}{cucodes/all_any_sync.cu}
+
+\label{app:all_any_ballot}
+\end{code}
+
+The output of this program on my computer is given by: 
+\begin{code}
+\inputminted[breaklines, frame=single, tabsize=1]{zsh}{cucodes/output_all_any.sh}
+\end{code}
+The code is quite straightforward to understand, but let's break it down. The program contains 
+2 independent functions - one to demonstate the \verb|__all_sync()| and \verb|__any_sync()| functions, 
+and one the \verb|__ballot_sync()|. Let's start with the first one.
+
+
+The functions runs on 32 threads, that is, one warp. This is not surprising, as we're dealing with 
+warp-local primitives, which we want to illustrate. The example consists of applying the 2 functions of 
+interest to determine, whether there are functions having an even ID. Which is, of course true, as indices in 
+a single lane go from $0$ to $31$. So first we're retrieving the index of the thread and constructing the variable, 
+\verb|id_is_even|, which will be \verb|true| if the id is even, and \verb|false| otherwise. It is clear, that there will be 16
+threads, in which it evaluates to \verb|true|, and 16, where it evaluates to \verb|false|. Next, we're asking the CUDA 
+runtime, to give us the mask with active threads. In our case, all of the launched threads will be active. Thus the \verb|mask| 
+evaluates to \verb|-1| or \verb|0xffffffff| in hex. Finally, were using the two functions of interest. From each thread, 
+the function will "look into other's threads" and evaluate the predicate. From that it is clear, that the return values from 
+the specific function will be the same in all threads. After applying the functions, we're synchronizing threads, which is, maybe, 
+unnecessary. Finally we're printing the results of the 2 evaluations (we're doing it only once, as the results are the same in all threads within the warp). The result is not surprising. Indeed, the function \verb|__all_sync()| will return false, as \textbf{not all thread's 
+id is even} (there are also odd id's). The function \verb|__any_sync()|, on the other hand, returns true, as there is at least one 
+function, that fulfills the condition of having an even index.
+
+
+The second function is similar, yet more \textit{more precise}. That is, we can retrieve the precise index of the thread within the lane, 
+where the predicate has been evaluated to \verb|true|. In this case, the predicate will be true if the thread's lane index is equal to the 
+arbitrary chosen value $12$. There will be only one thread, which fulfills this condition, namely - the one with the lane id $12$. Thus, 
+similarly to the previous example, we retrieve the id and compute the predicate. Then retrieve the mask for active threads, and 
+pass it, together with the predicate, to the \verb|__ballot_sync()|. Then printing the result (we're doing it only once, as the 
+result is the same for all the threads within the warp). The function that prints the results simply accesses integer's 
+consecutive bits. That is, in order to obtain integer's $n$ $i$'th bit, one writes \verb|(n & (1 << i) ) >> 1|. The result is expected: 
+all bits are $0$, except the 12'th in the sequence.
+
+
+
+
+
+
+
+
+
+
+
+
