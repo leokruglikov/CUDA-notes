@@ -23,6 +23,9 @@ The author will do its best to add new chapters and section, as well as modify t
 ### ToDo's 
 - [ ] Check spelling/grammar.
 - [ ] Add parallel algorithm - parallel scan.
+- [ ] Add thread filtering (`__all()` & `__any()`)
+- [ ] Constant memory, texture memory & peer access
+- [ ] Cuda gdb
 
 
 ### Structure
