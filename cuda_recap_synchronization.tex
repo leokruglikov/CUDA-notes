@@ -199,13 +199,13 @@ CUDA functionality, is to look it up in the NVidia's developer's guide \cite{cen
       where \verb|mask| is the filtering mechanism. Based on this filter, only threads, which 
     fulfill it will be eligible to get eventually syncrhonized. This passed \verb|mask| 
   can be the result from, for example, the \verb|__activemask()| function. The \verb|predicate| is the 
-    condition, that will be evaluated in all threads, that have passed the filter condition. 
+  condition, that will be evaluated in all threads, that have passed the filter condition. See example \autoref{app:all_any_ballot}.
     The function \textsl{will return non-zero if and only if the predicate evaluates non-zero to \textbf{all} of them} \cite{center}.
   \item \verb|__any_sync()| is a similar version, having the same signature as the 
-    \verb|__all_sync()|. But the difference is that \textsl{the function will return non-zero if and only if the predicate evaluates non-zero to \textbf{any} of them} \cite{center}.
+    \verb|__all_sync()|. But the difference is that \textsl{the function will return non-zero if and only if the predicate evaluates non-zero to \textbf{any} of them} \cite{center}. See example \autoref{app:all_any_ballot}.
   \item A more complex function, which gives more information, about the evaluation of the predicate,
     it the \verb|__ballot_sync()|. The signature of this function is \verb|unsigned __ballot_sync(unsigned mask, int predicate)|. The difference between this function and the previous ones, 
-    is that \textsl{the function returns an integer, whose N'th bit is set if and only if the predicate evaluates to non-zero for the N'th thread of the warp, and the N'th thread is active}. \cite{center}.
+    is that \textsl{the function returns an integer, whose N'th bit is set if and only if the predicate evaluates to non-zero for the N'th thread of the warp, and the N'th thread is active} \cite{center}. See example \autoref{app:all_any_ballot}.
     \item \verb|__shfl_sync()|, or, in previous CUDA versions, \verb|__shfl()| is a tool, to "broadcast", or "spread"
         a certain value from a certain thread (identified with its lane) to all others in the warp. For example, 
         in a certain warp, all the threads have a variable \verb|int b = //some random int|, unique for all 
