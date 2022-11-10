@@ -22,7 +22,7 @@ The author will do its best to add new chapters and section, as well as modify t
 
 ### ToDo's 
 - [ ] Check spelling/grammar.
-- [ ] Add parallel algorithm, other than reduce.
+- [ ] Add parallel algorithm - parallel scan.
 
 
 ### Structure
