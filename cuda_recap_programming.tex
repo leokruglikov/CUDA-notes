@@ -636,7 +636,55 @@ to these concepts. It is also clear that these things are difficult \sout{or eve
 does not have any ideas of where to look for the performance issues. In most cases, 
 the \textit{solution} is to simply benchmark the execution of the program, and consequently test the program with different configurations. 
 
+\subsubsection{Other memory addressing}
+The main memory, we'll work with is the global and shared memory. However, it would be instructive to have a look at the 
+syntax of constant and texture memory allocations. So that, once we come across some of this syntax, we know what is meant 
+in this specific piece of code. 
 
+\vspace{-15pt}
+\paragraph{Constant memory } is specified with the \verb|__constant__| directive.
+Similary as we've done for shared memory with the \verb|__shared__| directive. 
+Thus, the constant memory allocation/initialization outside the device code would look something like 
+\verb|__constant__ float data[256]|. Now, in the device code, in order to access it, one simply writes \verb|data[i]|.
+Now, the next question is how to access this memory from the host code. That is, how to initialize the 
+memory from host. To do that, one writes 
+ To do that, one writes 
+\begin{listing}
+\begin{minted}[frame=single, framesep=1mm]{cuda}
+//host code
+__constant__ float data[256];
+cudaMemcpyToSymbol(coeffs, hostData, 256*sizeof(float));
+\end{minted}
+\caption{Constant memory allocation for device from host. The \textsl{hostData} pointer will be 
+the one used in the device code. \cite{talonmies_cudamemcpytosymbol_2013}}
+\end{listing}
+
+One can ask ourselves a question on the difference between the mentioned \verb|cudaMemcpyToSymbol()| and \verb|cudaMemcpy()|
+functions. The reason, why we can't use the the classical \verb|cudaMemcpy()| function, is because once we declare 
+the constant memory using the \verb|__constant__| directive, it has already been explicitly \textit{allocated} and identified as 
+constant memory. However, with \verb|cudaMalloc|, we're implicitly assuming, that the memory is global. Therefore, the in order to use 
+the \verb|cudaMemcpy()| function, one must first retrieve the address of the constant memory pointer.
+For that, we write
+\begin{minted}[frame=single, framesep=1mm]{cuda}
+//host code
+__constant__ float data[256];
+float *dcoeffs;
+cudaGetSymbolAddress((void **)&dcoeffs, coeffs);
+cudaMemcpy(dcoeffs, data, 256*sizeof(float), cudaMemcpyHostToDevice);
+\end{minted}
+The data can then be used safely from the device.
+
+\vspace{-15}
+\paragraph{Texture memory}, as mentioned, will discuss extensively the texture memory. The only 
+thing I'll do is to mention, the functions that are associated with the texture memory. The terminology 
+for it is similar to the OpenGL's one. That is, vertex buffer objects, vertex array object \cite{noauthor_docsgl_nodate}. Such functions are:
+
+\begin{minted}[frame=single, framesep=1mm]{cuda}
+cudaMallocArray() //memory allocation
+cudaBindTextureToArray() //memory association with specific texture
+\end{minted}
+
+and many others. For more informations : \cite{noauthor_steps3d_nodate}.
 %https://stackoverflow.com/questions/16119943/how-and-when-should-i-use-pitched-pointer-with-the-cuda-api
 
 \subsubsection{Memory mapping}
@@ -722,7 +770,12 @@ The flaw of this method is the increase of processing time, as the data is simpl
      There is no other functions to invoke, as the memory is initialized for both the host and the device.
 
    \label{mem_alloc}
+ \end{itemize}
+ Note, that this GPU $\leftrightarrow$ CPU communication is assured via the so-called \textbf{peer access}, 
+ which is represented by the \verb|cudaDeviceEnablePeerAccess()| function (see official documentation \cite{center} and \cite{boreskov__nodate}).
   
+
+
 \subsubsection{Asynchronous memory}
   \label{subsub:async_mem}
   We have seen that both the memory access and memory allocation will affect the program execution time. 
@@ -750,7 +803,6 @@ The flaw of this method is the increase of processing time, as the data is simpl
   \end{minted}
   \caption{The code snippet \cite{async_memcpy} is giving an example of how to use the asynchronous memory copy. 
 Thanks to the streams combination with the async memory copy, the only synchronization that is happening is the memory copy and kernel execution, inside 
-a separate stream. That is, if no streams are specified, every iteration is will wait for the previous one to finish. For details, see \cite{sec:streams}.}
+a separate stream. That is, if no streams are specified, every iteration is will wait for the previous one to finish. For details, see \autoref{sec:streams}.}
 \end{listing}
 
-\end{itemize}

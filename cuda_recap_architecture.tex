@@ -115,8 +115,9 @@ We will see that the execution of kernel by threads is more efficient when we ta
 they are grouped by warps.
 
 \subsection{Memory model}
-The memory model of the GPU is quite complicated. It has different fields of memory that have different characteristics-
-latency of access, write/read modes, size, scope (to whom it is visible), etc... First let's take a look into \textbf{general}
+The memory model of the GPU is quite complicated and different from CPUs memory. It has different fields of memory that have different characteristics-
+latency of access, write/read modes, size, scope (to whom it is visible), etc... In the CPU memory, large regions are filled with different level caches. They have similar characteristics. At least, CPU caches are not as different from each other, as the GPU memory types.
+First let's take a look into \textbf{general}
 notions concerning the memory model.
 \vspace{-15pt}
 \paragraph{Coalesced vs uncoalesced memory access.} 
@@ -159,12 +160,14 @@ As we've discussed, the kernels are launched \textbf{from} a host (a CPU). It wo
 resources between the host and the device. For example, send data to the GPU from a usual \verb|C| program
 and retrieve it back in a processed form, otherwise, the GPGPU programming does not make sense. 
 This is exactly the purpose of global memory. The global memory, as the 
-name suggests, is \textsl{global}, i.e. it is \textbf{visible to all threads from all blocks}. As we will see in practice,
+name suggests, is \textsl{global}, i.e. it is \textbf{visible to all threads from all blocks}, and even to the CPU. As we will see in practice,
 the usual workflow of the program is to copy the data from the global memory to some other (which is discussed below), 
 which is faster \footnote{You may think of it as the {\fontfamily{pcr}\selectfont malloc()} or {\fontfamily{pcr}\selectfont calloc()} functions in C
 or the keyword {\fontfamily{pcr}\selectfont new} in C++. Indeed, the allocation and the access to those variables is slower than 
 declaring on the stack:\newline {\fontfamily{pcr}\selectfont int $^{\ast}$ ptr\_a = new int; } is slower than {\fontfamily{pcr}\selectfont int a = \{\};}}  
-to manipulate. 
+to manipulate. In modern GPU architectures, the global memory is cached. However, we should not rely much on it, 
+as even the access to the cached parts of memory is extremely slow compared to other types of memory. We will see in examples, that one of key to a performant program is to minimize the access to this 
+slow global memory.
 
 \vspace{-15pt}
 \paragraph{\underline{The Shared memory}} \label{grocery_store} is much faster than global one but evidently smaller. Another 
@@ -183,6 +186,26 @@ is the \textit{bank conflicts}\footnote{A small disclaimer: the notion of \texti
 notes, as it took a very long time, for the author to understand this concept. The reader should not panic if he's missing something. The examples will be discussed later in the practice part. So one 
 should, if necessary, come back to this "theoretical" part after going through the examples. \sout{The author wants to apologize 
 for the eventual wordiness.}}. 
+
+\vspace{-0.5cm}
+\paragraph{Constant memory} is, as its name suggests constant, thus cannot be changed by the threads during 
+the runtime. The constant memory is loaded as static at the beginning of the propram. The constant memory can be 
+accessed by all threads in all thread blocks. This memory has a separate caching mechanism, thanks to what, it has 
+a low latency. It suits for variables, which do not change over time, which must be accessed by all threads, and, which, 
+for some reasons can't be stored in registers.
+
+\paragraph{Texture memory} is the most \textit{special} memory in the list. It is organized into physical 
+texture blocks on the GPU. The field of application for texture memory are graphical mechanisms. Despite being a huge topic, we will not discuss 
+it in detail here. The reason for that is that we want to use the GPU resources not for graphics, but for its general purpose computational capabilities. The texture memory is used to fill polygons/triangles with textures. This memory 
+is often mentioned in the context of CUDA and OpenGL interoperability (see \cite{center} section OpenGL Interoperability).
+
+\paragraph{Local registers}
+By looking at the scheme of the architecture of the GPU vs the CPU (\autoref{cpuvsgpu}), one may notice the number 
+of registers in the GPU vs the CPU. The amount of registers in the GPU
+is incompararble with the registers of the CPU. As you might have guessed, a 
+register is a memory, with the scope of a thread. The compiler of a CUDA program will try to optimize the number and size of registers. 
+It is nevertheless possible, that the amount of memory in registers may fall short. Then the L1 and/or L2 caches will enter the 
+play. This is the fastest memory available in the CUDA API, yet the most restrictive.
 
 \paragraph{Bank conflicts.}We already discussed the notion of warps, as an execution entity encapsulating threads. 
 One may think of the \underline{banks} as the analogy of warps in memory
@@ -212,29 +235,6 @@ The analogy \sout{may} not be the best, but the sketch should do the trick:
    \label{banks}
 
 \end{figure}
-
-\vspace{-0.5cm}
-\paragraph{Read-only memory$\ast$} is, as its name suggests, can't be changed by the kernel's threads, but is loaded at compile time. This memory is not as commonly 
-described in the GPGPU programming documentation. 
-The name \textit{read-only} is ambiguous, as, in different documentation, it is referred to different things.
-It can be referred to as the constant memory, which we will not really discuss here. Constant memory is specified with the \verb|\_\_constant_\_| compiler 
-directive. The usage of its functionally the same as some kind of constant memory in various programming languages.
-
-The other memory, that I've seen this referring to is the \textit{texture memory}. Texture memory is actually a very important concept, which, unfortunately, 
-we will not treat now. Texture memory, as the name suggests, works with texture. Simply described, texture in the context of 
-GPU is the "image", that we're attaching to some 3D object. In GPU programming related to visuals, we're often using this memory. 
-However, as you've noticed, we are not really describing rendering here. 
-Texture memory in CUDA is widely used together with 3rd party GPU APIs, such as OpenGL or DirectX. Indeed, there is a CUDA interoperability 
-option with these 3rd party APIs.
-
-
-\paragraph{Local registers}
-By looking at the scheme of the architecture of the GPU vs the CPU (\autoref{cpuvsgpu}), one may notice the number 
-of registers in the GPU vs the CPU. The amount of registers in the GPU
-is incompararble with the registers of the CPU. As you might have guessed, a 
-register is a memory, with the scope of a thread. The compiler of a CUDA program will try to optimize the number and size of registers. 
-It is nevertheless possible, that the amount of memory in registers may fall short. Then the L1 and/or L2 caches will enter the 
-play. This is the fastest memory available in the CUDA API, yet the most restrictive.
 
 \subsection{Memory allocation model}
 \label{subsection:mem_alloc_model}
