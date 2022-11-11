@@ -21,9 +21,9 @@ The author will do its best to add new chapters and section, as well as modify t
 ![The pdf document](cuda_recap.pdf "notes on cuda") and the source LaTeX code - `cuda_recap.tex`.
 
 ### ToDo's 
-- [ x ] Check spelling/grammar.
+- [ ] Check spelling/grammar.
 - [ ] Add parallel algorithm - parallel scan.
-- [ ] Add thread filtering (`__all()` & `__any()`)
+- [x] Add thread filtering (`__all()` & `__any()`)
 - [ ] Constant memory, texture memory & peer access
 - [ ] Cuda gdb
 
