@@ -57,3 +57,52 @@ You will learn about:
 	language = {Russian},
 	author = {Boreskov and Kharlamov and Markovskij and Miljnjcev and Sakharnih and Frolov},
 }
+
+@misc{reeves_ams_nodate,
+	type = {Course description},
+	title = {{AMS} 148: {GPU} {Programming} {For} {Scientific} {Computation} {\textbar} {AMS148}, {Spring} 18, {Section} 01},
+	url = {https://ams148-spring18-01.courses.soe.ucsc.edu/},
+	abstract = {This is a first course in parallel programming with GPUs in CUDA C and C++. This course covers introductory parallelism, basic hardware, parallel communication patterns, and primitive algorithms. The students will apply these topics to problems in scientific computing, image/signal processing, and linear algebra.  At the end of the course, students will complete a final project in a topic of their choosing.},
+	urldate = {2022-11-13},
+	author = {Reeves, Steven},
+	file = {AMS 148\: GPU Programming For Scientific Computation | AMS148, Spring 18, Section 01:/home/leo/Zotero/storage/5R9APMF6/ams148-spring18-01.courses.soe.ucsc.edu.html:text/html},
+}
+
+@misc{noauthor_prefix_2022,
+	title = {Prefix sum},
+	copyright = {Creative Commons Attribution-ShareAlike License},
+	url = {https://en.wikipedia.org/w/index.php?title=Prefix_sum&oldid=1120386053},
+	abstract = {In computer science, the prefix sum, cumulative sum, inclusive scan, or simply scan of a sequence of numbers x0, x1, x2, ... is a second sequence of numbers y0, y1, y2, ..., the sums of prefixes (running totals) of the input sequence:
+
+y0 = x0
+y1 = x0 + x1
+y2 = x0 + x1+ x2
+...For instance, the prefix sums of the natural numbers are the triangular numbers:
+
+Prefix sums are trivial to compute in sequential models of computation, by using the formula yi = yi − 1 + xi to compute each output value in sequence order. However, despite their ease of computation, prefix sums are a useful primitive in certain algorithms such as counting sort,
+and they form the basis of the scan higher-order function in functional programming languages. Prefix sums have also been much studied in parallel algorithms, both as a test problem to be solved and as a useful primitive to be used as a subroutine in other parallel algorithms.Abstractly, a prefix sum requires only a binary associative operator ⊕, making it useful for many applications from calculating well-separated pair decompositions of points to string processing.Mathematically, the operation of taking prefix sums can be generalized from finite to infinite sequences; in that context, a prefix sum is known as a partial sum of a series. Prefix summation or partial summation form linear operators on the vector spaces of finite or infinite sequences; their inverses are finite difference operators.},
+	language = {en},
+	urldate = {2022-11-13},
+	journal = {Wikipedia},
+	month = nov,
+	year = {2022},
+	note = {Page Version ID: 1120386053},
+	file = {Snapshot:/home/leo/Zotero/storage/8AHRTZXN/Prefix_sum.html:text/html},
+}
+
+@misc{harris_parallel_2007,
+	title = {Parallel {Prefix} {Sum} ({Scan}) with {CUDA}},
+	copyright = {2007 NVIDIA Corporation. All rights reserved.},
+	url = {https://www.eecs.umich.edu/courses/eecs570/hw/parprefix.pdf},
+	abstract = {Parallel prefix sum, also known as parallel Scan, is a useful building block for many
+parallel algorithms including sorting and building data structures. In this document
+we introduce Scan and describe step-by-step how it can be implemented efficiently
+in NVIDIA CUDA. We start with a basic naïve algorithm and proceed through
+more advanced techniques to obtain best performance. We then explain how to
+scan arrays of arbitrary size that cannot be processed with a single block of threads.},
+	language = {English},
+	urldate = {2022-10-14},
+	author = {Harris, Mark},
+	month = apr,
+	year = {2007},
+}

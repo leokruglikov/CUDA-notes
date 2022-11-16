@@ -1,4 +1,12 @@
+
 \section{Basic parallel algorithms \& patterns}
+
+As you might have guessed, parallel programming is a whole field of computer 
+science. In the academic world, algorithms are thoroughly analyzed, and scientists come up with new patterns and ideas. I will not give extensive 
+comments on the theoretical notions on the algorithm, proof of its complexity, etc... 
+The goal is, as you've guessed to give the idea of the main patterns and algorithms and its potential 
+applications. As well as intuition of ideas, of how to potentially improve those algorithms.
+
 \subsection{Reduce}
 Consider the situation, when we need to add all the array's elements together. In \verb|C++|, one could use 
 the STL algorithm \verb|accumulate()| function. In a more primitive implementation, we would do a single for-loop 
@@ -113,7 +121,7 @@ data pieces to each block (see figure).
 Now, let's try to understand it together in more detail, using well-defined numbers of threads and blocks, 
 to make things more illustrative. Trying to keep in mind both the illustration (\autoref{fig:shared_reduce}).
 
-\begin{listing}
+\begin{listing}[ht!]
 \inputminted[frame=single, framesep=1mm, linenos=true]{cuda}{cucodes/shared_rreduced.cu}
 \caption{Optimized reduce, with shared memory. \cite{tuomanen2018hands}}
 \end{listing}
@@ -261,5 +269,113 @@ Supposedly, the bigger the bloc dimension is, the less iterations will cause war
 Personally speaking, this code/approach is much easier to understand and visualize than the previous ones, and in addition
 a bit faster. However, I wanted to roughly take some course/book's paths, where the reduction is 
 presented in this specific order.
+
+
+\subsection{Scan}
+
+Scan is an another fundamental algorithm in parallel programming. In fact, it is somehow more fundamental than reduce, as the latter is a special case of scan. 
+While the reduce algorithm produces a single value from an input array (in fact, the algorithm can operate on any types, as long as it supports a binary operation), 
+the result of a scan algorithm is also an array. For example, suppose we're given an array of integers - $\{ 1, 4, 5, 7\}$ and the the binary operation of $+$. Then 
+the resulting output of the scan algorithm, would be $\{ 1, 4, 6, 7\} \xRightarrow{+}  \{1, 5, 11, 18\}$ \cite{reeves_ams_nodate}. From that, one can easily 
+infer the functionality of the most general scan algorithm - it accumulates the result of the consecutive application of the binary operator, element by element.
+More formaly, following the theoretical notions provided in \cite{reeves_ams_nodate}, one defines the inclusive and exclusive scans respectively: 
+\begin{align}
+  \{x_0, x_1,..., x_n\} \xrightarrow{inclusive scan} \{x_0, x_0 \otimes x_1, ..., \bigotimes^{n}_{i}x_i \}\\
+  \{x_0, x_1,..., x_n\} \xrightarrow{exclusive scan} \{\mathds{1}, x_0 \otimes x_1, ..., \bigotimes^{n-1}_{i}x_i \}
+\end{align}
+, where $\mathds{1}$ is the identity element for the set and the provided binary operation. In the case of addition, $\mathds{1}_{\otimes} = 0$. 
+
+It is clear that the scan algorithm is more complex to implement in parallel. Luckily, there are 2 most popular 
+parallel scan algorithms, that are studied in parallel computing classes : Hillis and Steele's algorithm and Blelloch's algorithm \cite{noauthor_prefix_2022}. 
+Note that it is very easy to run into very complex descriptions of these algorithms, as well as their alternatives. This is a complex yet promising field 
+involving various branches of mathematics and theoretical computer science.
+The schematic of the Hillis and Steele's algorithm looks as follows: 
+
+\begin{figure}[ht!]
+  \centering
+  \includegraphics[width=0.8\textwidth]{pngs/hillis_steele.png}
+  \caption{The illustration of the (inclusive) scan algorithm. Source from \cite{reeves_ams_nodate}.}
+  \label{fig:hillis_steele}
+\end{figure}
+
+Okay, let's now try to implement the naive version of the algorithm. In fact, I found very few documents, where this topic is 
+approached thoroughly, and where this naive algorithm is further improved. 
+So I'll try to describe the idea of the process of how I'd sketch such an algorithm, namely, this naive algorithm.
+As usual, the idea is to first design the algorithm, without any consideration about the optimization or whatsoever. 
+
+
+The main observation of the algorithm depicted on \autoref{fig:hillis_steele}:
+\begin{itemize}
+   \setlength\itemsep{-0.5em}
+  \item If the length of the input array is $N$, then the number of parallel summing operations is equal to $\log_2 N$.
+  \item During each parallel operation, we're adding two threads, which are located at a distance we'll call \textsl{offset}.
+  \item The \textsl{offset} evolves as $1 \xrightarrow{} 2 \xrightarrow{} 4 \xrightarrow{} 8 ...$.
+  \item The final value of the offset seems to be the half of the initial array input.
+\end{itemize}
+
+The first assumption that we'll make is that the array will be a power of 2, for example $64$, or $1024$.
+The second one, without loss of generality and for simplicity's sake, we'll suppose that the array fits 
+into a block. So let's write the operations 
+of the pipeline for each iteration: 
+\begin{enumerate}
+   \setlength\itemsep{-0.5em}
+  \item $(in[0] \otimes in[1])\xrightarrow{} out[1]$; $(in[1] \otimes in[2]) \xrightarrow{} out[2]$; $(in[2] \otimes in[3] \xrightarrow{} out[3]) $; $(in[3] \otimes in[4]) \xrightarrow{} out[4]$; etc ...
+    \textbf{in $\xleftarrow{}$ out } (performs array copy, i.e. the output array becomes the input array).
+  \item $(in[0] \otimes in[2]) \xrightarrow{} out[2]$; $(in[1] \otimes in[3]) \xrightarrow{} out[3]$;
+    $(in[2] \otimes in[4]) \xrightarrow{} out[4]$; etc... \textbf{in $\xleftarrow{}$ out }.
+  \item $(in[0] \otimes in[4]) \xrightarrow{} out[4]$; $(in[1] \otimes in[5]) \xrightarrow{} out[5]$; etc ... \textbf{in $\xleftarrow{}$ out }.
+\end{enumerate}
+
+\begin{listing}
+\begin{minted}[linenos=true, frame=single, framesep=1mm]{cuda}
+__global__ void naive_scan(int* input, int* output, int size){
+  int id = threadIdx.x;
+  for(int i = 1; i<=size/2; i*=2){
+    if(id < (size)-i){
+      output[i+id] = input[id]+input[id+i];
+    }
+    __syncthreads();
+    swap_ptr(input, output);
+    __syncthreads();
+  }
+}
+\end{minted}
+\label{listing:hillis_steele}
+\caption{Hillis-Steele's most naive implementation using global memory. Note that this implementation 
+supposes certain condition, such that size of the input array must be inferior to $1024$, and it musts be a power of $2$. 
+The first condition is easily modified, as we're anyways working inside the global memory, and the second one is neither a problem, 
+as one can always increase the array by adding neutral elements. In the case of addition, the neutral element would be 0.}
+\end{listing}
+
+Let's discuss the most basic naive Hillis-Steele's algorithm. This algorithm implementation 
+has many problems, and perhaps even slower than the sequential one. 
+This implementation uses the global memory (thus increasing latency), has 2 \verb|__syncthreads()| 
+calls \footnote{Which is conceptually not a problem, but the need to synchronize threads 2 seems a lot for a 10 line kernel.}. 
+%In 
+%addition, one may clearly see bank conflicts, when, for example, doing the first iteration of line 5. Indeed, for the first iteration 
+%in the $0$'th thread, we're accessing \verb|input[0]| and \verb|input[1]|. At the same time, in thread with index $1$, we're accessing 
+%\verb|input[1]| and \verb|input[2]|. This is thus a simultaneous access to one 
+Thus we may want to improve this simple scan algorithm by adding shared memory. 
+Furthermore, Mark Harris points out that the algorithm performs 
+$O(N\log_2N)$ additions, whereas the sequential version of it only does $O(N)$ additions. Of course, this 
+number-of-additions complexity in parallel algorithms does not impact it as much as in the sequential one 
+\footnote{What i mean here, that the number of operations in sequential vs parallel algorithms does not necessarily have a bad impact 
+on the algorithm. Indeed, when we are adding 2 vectors, the number-of-additions complexity is the same both for the sequential implementation (simple looping) 
+and the parallel implementation. We've however seen that the parallel version of adding vectors is much faster for large vectors. What I want to say 
+is that one must dive deeper into theoretical computer science and mathematics, in order to formally analyze the algorithms.}.
+
+Thus, the first improvement is to replace the global memory by the shared one. However, this does not solve the constraint 
+of the input vector to be less than the number of threads in the block, as the shared memory's scope is one single block. 
+Keeping that constraint in mind, it is quite straightforward to implement the shared memory version of the Hillis Steele's 
+algorithm. 
+
+
+One may try to improve this algorithm further by adding the just-mentioned shared memory \underline{and} removing the constraint of the input array size.
+However, I will move on by introducing the next scan algorithm, which is the one that is the most widely used.
+
+
+
+
+
 
 
