@@ -357,7 +357,7 @@ calls \footnote{Which is conceptually not a problem, but the need to synchronize
 %\verb|input[1]| and \verb|input[2]|. This is thus a simultaneous access to one 
 Thus we may want to improve this simple scan algorithm by adding shared memory. 
 Furthermore, Mark Harris points out that the algorithm performs 
-$O(N\log_2N)$ additions, whereas the sequential version of it only does $O(N)$ additions. Of course, this 
+$O(N\log_2N)$ additions, whereas the sequential version of it only does $O(N)$ additions \cite{harris_parallel_2007}. Of course, this 
 number-of-additions complexity in parallel algorithms does not impact it as much as in the sequential one 
 \footnote{What i mean here, that the number of operations in sequential vs parallel algorithms does not necessarily have a bad impact 
 on the algorithm. Indeed, when we are adding 2 vectors, the number-of-additions complexity is the same both for the sequential implementation (simple looping) 
@@ -371,7 +371,61 @@ algorithm.
 
 
 One may try to improve this algorithm further by adding the just-mentioned shared memory \underline{and} removing the constraint of the input array size.
-However, I will move on by introducing the next scan algorithm, which is the one that is the most widely used.
+However, I will move on by introducing the next scan algorithm, which is the one that is the most widely used. The Blelloch algorithm is a fundamental 
+algorithm, which is taught in all parallel computing courses. The algorithm is indeed not easy to understand, but we will try... The Blelloch algorithm 
+performs an exclusive scan (which is different from the inclusive scan, performed by the Hillis-Steele). The algorithm is divided into two main steps. 
+The first thing is to construct the so-called \textbf{tree-sum} \footnote{The notion of the tree-sum is not a fundamental notion. However, I've seen this notion in at least two 
+sources. So let's call it like that.}
+
+\begin{figure}
+  \centering
+  \begin{subfigure}[t]{0.45\textwidth}
+    \centering
+    \includegraphics[width=0.95\textwidth]{pngs/blelloch_sum_tree.png.png}
+  \end{subfigure}
+  \begin{subfigure}[t]{0.45\textwidth}
+    \centering
+    \includegraphics[width=0.95\textwidth]{pngs/blelloch.png}
+\end{subfigure}
+  \caption{The illustration of the blelloch sum-tree - the first step to the Blelloch scan algorithm (on the left).
+  Based on the sum-tree, we proceed to compute the Blelloch algorithm's second part, to find the scan result.}
+\label{fig:blelloch_scan}
+\end{figure}
+The tree-sum is easier to illustrate with a graphical example \autoref{fig:blelloch_scan}. In this simple illustration, 
+we have 8 threads, and an input array of size 8, which is simply given by the corresponding lane index.
+The in order to get the sum-tree, we first add elements pairwise. Then we add the obtained elements pairwise. 
+This process is performed until only one iteration is left. This is where we stop. In other words, this 
+can be seen as some kind of reduce operation. Namely, we're just reducing neighbours together. Indeed, 
+we're adding $0$ \& $1$, which now becomes the \textit{new first element for the next iteration.} Then, 
+we're adding $2$ \& $3$, which now becomes the \textit{new second element for the next iteration.} Once 
+this process is done for all elements, we repeat the same thing with the \textit{new first and new second elements just obtained}.
+The last element that will be obtained is will be the result of a reduce operation. The difference here between the reduce, is that 
+we're keeping those intermediate results, of the reduce operation.
+Once this sum-tree is constructed, we now start to compute the Blelloch scan algorithm. This second step of 
+the Blelloch algorithm may seem weird, and intuitively, even surprising that it works (at least for me). 
+This process of crossing elements down is sometimes reffered to as the \textbf{down-sweep} process. The corresponding 
+primitive operation of adding two elements, writing the sum down \textbf{and} reporting the right element to the left \autoref{fig:blelloch_scan} is 
+an operation, that has 2 inputs and 2 outputs, which is different from the seen reduce operator, where simply 2 numbers were added and put downwards.
+This cross operator is sometimes reffered to as the down-sweep operator. This primitive operator for 2 elements located at $i$ and $j$ 
+can be written as something like $in[i] + in[j] \xrightarrow{} out[j]\text{ ; } in[j] \xrightarrow{} out[i]$. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
