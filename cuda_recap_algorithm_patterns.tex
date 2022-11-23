@@ -410,6 +410,66 @@ This cross operator is sometimes reffered to as the down-sweep operator. This pr
 can be written as something like $in[i] + in[j] \xrightarrow{} out[j]\text{ ; } in[j] \xrightarrow{} out[i]$. 
 
 
+Let's have a look at the Blelloch scan algorithm, proposed by Mark Harris \cite{harris_parallel_2007} and
+\cite{boreskov__nodate}. To be more precise, let's first try to understand the initial step of this algorithm, 
+that is, building the mentioned sum-tree:
+
+\begin{listing}[ht!]
+\inputminted[frame=single, framesep=1mm, linenos=true]{cuda}{cucodes/blelloch_kernel.cu}
+\caption{The algorithm to build the sum-tree.}
+\end{listing}
+
+Let's now discuss step-by step, what is happening here. What we do first is allocate shared memory and copy the corresponding 
+data to this shared memory. You may have noticed that the number of shared memory is a bit strange. This is however not a 
+problem. This is done in all scan algorithm implementations and it is done for convenience. After that, the main loop 
+starts the main iteration. The initialization of \verb|d| starts with assigning the value of the half of \verb|n|, which is the size.
+After, we check if the thread id is less than \verb|d|. Note that the variable \verb|d| goes from \verb|n/2|, then \verb|n/4|, 
+\verb|n/8|, \verb|n/16|, etc... The crucial part is then the computation of \verb|ai| and \verb|bi|, which are the indices of the 2 
+variables in the array, that need to be added, when constructing the sum-tree. Once the indices are known, we do the
+addition. When this is done, the offset is multiplied by 2. The origin of these 
+expression for \verb|ai| \& \verb|bi| can be understood quite well by considering 
+separate cases for different \verb|tid|'s. Once again, the idea here is to really go 
+over the half of the threads (\verb|d| going from \verb|n/2| to 1, getting divided 
+by 2 at every iteration) and adding the elements in the same pattern as described in the 
+sum-tree algorithm. The next step is to go over the elements and perform the described 
+down-sweep over the array. 
+
+
+
+Let's now have a look at the concluding part of the algorithm (\autoref{listing:second_part_blelloch}). We start that by setting the first (here it is the last, as we're 
+considering that the algorithm goes from bottom to top) element to the neutral, as we're performing the exclusive scan. Then we 
+proceed to do a similar thing as we did during the first sum-tree step. The difference here, is that we're setting the 
+\verb|d| to be one, and iterating up to \verb|n|, by multiplying it by 2. The offset now is getting 
+decremented, dividing it at every iteration by \verb|2|. Then, similarly, we're checking whether the thread id is less than 
+d. Here, the conceptual difference with the tree-sum iteration is that \textsl{we're iterating from the other side of the array.} 
+Indeed, at the first iterations (in this second part), very few threads pass the check. Compared to the tree-sum algorithm, where, at the first iterations, many 
+threads pass the check. This is why we obtain an \textit{reverse-like} iteration.
+
+\begin{listing}[ht!]
+\inputminted[frame=single, framesep=1mm, linenos=true]{cuda}{cucodes/blelloch_end.cu}
+\caption{The second, concluding part of the algorithm, performing the blelloch exclusive scan.}
+\label{listing:second_part_blelloch}
+\end{listing}
+
+At lines $11$ \& $12$, we are computing the indices that are of our interest. You may notice that the 
+expression for computing these indices is exactly the same as those in the sum-tree part. As I already 
+mentioned, the idea and origin of these expressions seems obvious, once we really consider different 
+particular examples of those \footnote{That is, when we fix the number of threads at 8, and consider the iterations for different d's, n's and offsets. \\
+Then fix the number of threads at e.g. 16 and consider different values for d's, n's and offsets. And 
+etc...}. On lines $15$ and $17$, this down-sweep operator is performed. That is, this cross-operator 
+is performed by reporting the i'th element to the j'th, and adding the 2 elements at i.
+Finally, we need to syncronize threads before we copy the data. Thus, the final step is to simply copy 
+the obtained elements of the exclusive scan to global memory.
+
+
+The scan algorithm is a fundamental concept in parallel programming. We've seen two \sout{not-so} simple scan algorithms. 
+The second implementation comes out to be more efficient than the first inclusive scan. However, it is possible to significantly improve the 
+second algorithm too. Indeed, the second algorithm suffers from bank conflicts of multiple orders. I will not comment on these for the moment, 
+as these improvements are nicely commented in Harris' Guide on prefix CUDA scan \cite{harris_chapter_nodate}. 
+
+
+
+
 
 
 
