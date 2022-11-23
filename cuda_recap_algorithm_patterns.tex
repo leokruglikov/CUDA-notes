@@ -1,4 +1,12 @@
+
 \section{Basic parallel algorithms \& patterns}
+
+As you might have guessed, parallel programming is a whole field of computer 
+science. In the academic world, algorithms are thoroughly analyzed, and scientists come up with new patterns and ideas. I will not give extensive 
+comments on the theoretical notions on the algorithm, proof of its complexity, etc... 
+The goal is, as you've guessed to give the idea of the main patterns and algorithms and its potential 
+applications. As well as intuition of ideas, of how to potentially improve those algorithms.
+
 \subsection{Reduce}
 Consider the situation, when we need to add all the array's elements together. In \verb|C++|, one could use 
 the STL algorithm \verb|accumulate()| function. In a more primitive implementation, we would do a single for-loop 
@@ -113,7 +121,7 @@ data pieces to each block (see figure).
 Now, let's try to understand it together in more detail, using well-defined numbers of threads and blocks, 
 to make things more illustrative. Trying to keep in mind both the illustration (\autoref{fig:shared_reduce}).
 
-\begin{listing}
+\begin{listing}[ht!]
 \inputminted[frame=single, framesep=1mm, linenos=true]{cuda}{cucodes/shared_rreduced.cu}
 \caption{Optimized reduce, with shared memory. \cite{tuomanen2018hands}}
 \end{listing}
@@ -261,5 +269,227 @@ Supposedly, the bigger the bloc dimension is, the less iterations will cause war
 Personally speaking, this code/approach is much easier to understand and visualize than the previous ones, and in addition
 a bit faster. However, I wanted to roughly take some course/book's paths, where the reduction is 
 presented in this specific order.
+
+
+\subsection{Scan}
+
+Scan is an another fundamental algorithm in parallel programming. In fact, it is somehow more fundamental than reduce, as the latter is a special case of scan. 
+While the reduce algorithm produces a single value from an input array (in fact, the algorithm can operate on any types, as long as it supports a binary operation), 
+the result of a scan algorithm is also an array. For example, suppose we're given an array of integers - $\{ 1, 4, 5, 7\}$ and the the binary operation of $+$. Then 
+the resulting output of the scan algorithm, would be $\{ 1, 4, 6, 7\} \xRightarrow{+}  \{1, 5, 11, 18\}$ \cite{reeves_ams_nodate}. From that, one can easily 
+infer the functionality of the most general scan algorithm - it accumulates the result of the consecutive application of the binary operator, element by element.
+More formaly, following the theoretical notions provided in \cite{reeves_ams_nodate}, one defines the inclusive and exclusive scans respectively: 
+\begin{align}
+  \{x_0, x_1,..., x_n\} \xrightarrow{inclusive scan} \{x_0, x_0 \otimes x_1, ..., \bigotimes^{n}_{i}x_i \}\\
+  \{x_0, x_1,..., x_n\} \xrightarrow{exclusive scan} \{\mathds{1}, x_0 \otimes x_1, ..., \bigotimes^{n-1}_{i}x_i \}
+\end{align}
+, where $\mathds{1}$ is the identity element for the set and the provided binary operation. In the case of addition, $\mathds{1}_{\otimes} = 0$. 
+
+It is clear that the scan algorithm is more complex to implement in parallel. Luckily, there are 2 most popular 
+parallel scan algorithms, that are studied in parallel computing classes : Hillis and Steele's algorithm and Blelloch's algorithm \cite{noauthor_prefix_2022}. 
+Note that it is very easy to run into very complex descriptions of these algorithms, as well as their alternatives. This is a complex yet promising field 
+involving various branches of mathematics and theoretical computer science.
+The schematic of the Hillis and Steele's algorithm looks as follows: 
+
+\begin{figure}[ht!]
+  \centering
+  \includegraphics[width=0.8\textwidth]{pngs/hillis_steele.png}
+  \caption{The illustration of the (inclusive) scan algorithm. Source from \cite{reeves_ams_nodate}.}
+  \label{fig:hillis_steele}
+\end{figure}
+
+Okay, let's now try to implement the naive version of the algorithm. In fact, I found very few documents, where this topic is 
+approached thoroughly, and where this naive algorithm is further improved. 
+So I'll try to describe the idea of the process of how I'd sketch such an algorithm, namely, this naive algorithm.
+As usual, the idea is to first design the algorithm, without any consideration about the optimization or whatsoever. 
+
+
+The main observation of the algorithm depicted on \autoref{fig:hillis_steele}:
+\begin{itemize}
+   \setlength\itemsep{-0.5em}
+  \item If the length of the input array is $N$, then the number of parallel summing operations is equal to $\log_2 N$.
+  \item During each parallel operation, we're adding two threads, which are located at a distance we'll call \textsl{offset}.
+  \item The \textsl{offset} evolves as $1 \xrightarrow{} 2 \xrightarrow{} 4 \xrightarrow{} 8 ...$.
+  \item The final value of the offset seems to be the half of the initial array input.
+\end{itemize}
+
+The first assumption that we'll make is that the array will be a power of 2, for example $64$, or $1024$.
+The second one, without loss of generality and for simplicity's sake, we'll suppose that the array fits 
+into a block. So let's write the operations 
+of the pipeline for each iteration: 
+\begin{enumerate}
+   \setlength\itemsep{-0.5em}
+  \item $(in[0] \otimes in[1])\xrightarrow{} out[1]$; $(in[1] \otimes in[2]) \xrightarrow{} out[2]$; $(in[2] \otimes in[3] \xrightarrow{} out[3]) $; $(in[3] \otimes in[4]) \xrightarrow{} out[4]$; etc ...
+    \textbf{in $\xleftarrow{}$ out } (performs array copy, i.e. the output array becomes the input array).
+  \item $(in[0] \otimes in[2]) \xrightarrow{} out[2]$; $(in[1] \otimes in[3]) \xrightarrow{} out[3]$;
+    $(in[2] \otimes in[4]) \xrightarrow{} out[4]$; etc... \textbf{in $\xleftarrow{}$ out }.
+  \item $(in[0] \otimes in[4]) \xrightarrow{} out[4]$; $(in[1] \otimes in[5]) \xrightarrow{} out[5]$; etc ... \textbf{in $\xleftarrow{}$ out }.
+\end{enumerate}
+
+\begin{listing}
+\begin{minted}[linenos=true, frame=single, framesep=1mm]{cuda}
+__global__ void naive_scan(int* input, int* output, int size){
+  int id = threadIdx.x;
+  for(int i = 1; i<=size/2; i*=2){
+    if(id < (size)-i){
+      output[i+id] = input[id]+input[id+i];
+    }
+    __syncthreads();
+    swap_ptr(input, output);
+    __syncthreads();
+  }
+}
+\end{minted}
+\label{listing:hillis_steele}
+\caption{Hillis-Steele's most naive implementation using global memory. Note that this implementation 
+supposes certain condition, such that size of the input array must be inferior to $1024$, and it musts be a power of $2$. 
+The first condition is easily modified, as we're anyways working inside the global memory, and the second one is neither a problem, 
+as one can always increase the array by adding neutral elements. In the case of addition, the neutral element would be 0.}
+\end{listing}
+
+Let's discuss the most basic naive Hillis-Steele's algorithm. This algorithm implementation 
+has many problems, and perhaps even slower than the sequential one. 
+This implementation uses the global memory (thus increasing latency), has 2 \verb|__syncthreads()| 
+calls \footnote{Which is conceptually not a problem, but the need to synchronize threads 2 seems a lot for a 10 line kernel.}. 
+%In 
+%addition, one may clearly see bank conflicts, when, for example, doing the first iteration of line 5. Indeed, for the first iteration 
+%in the $0$'th thread, we're accessing \verb|input[0]| and \verb|input[1]|. At the same time, in thread with index $1$, we're accessing 
+%\verb|input[1]| and \verb|input[2]|. This is thus a simultaneous access to one 
+Thus we may want to improve this simple scan algorithm by adding shared memory. 
+Furthermore, Mark Harris points out that the algorithm performs 
+$O(N\log_2N)$ additions, whereas the sequential version of it only does $O(N)$ additions \cite{harris_parallel_2007}. Of course, this 
+number-of-additions complexity in parallel algorithms does not impact it as much as in the sequential one 
+\footnote{What i mean here, that the number of operations in sequential vs parallel algorithms does not necessarily have a bad impact 
+on the algorithm. Indeed, when we are adding 2 vectors, the number-of-additions complexity is the same both for the sequential implementation (simple looping) 
+and the parallel implementation. We've however seen that the parallel version of adding vectors is much faster for large vectors. What I want to say 
+is that one must dive deeper into theoretical computer science and mathematics, in order to formally analyze the algorithms.}.
+
+Thus, the first improvement is to replace the global memory by the shared one. However, this does not solve the constraint 
+of the input vector to be less than the number of threads in the block, as the shared memory's scope is one single block. 
+Keeping that constraint in mind, it is quite straightforward to implement the shared memory version of the Hillis Steele's 
+algorithm. 
+
+
+One may try to improve this algorithm further by adding the just-mentioned shared memory \underline{and} removing the constraint of the input array size.
+However, I will move on by introducing the next scan algorithm, which is the one that is the most widely used. The Blelloch algorithm is a fundamental 
+algorithm, which is taught in all parallel computing courses. The algorithm is indeed not easy to understand, but we will try... The Blelloch algorithm 
+performs an exclusive scan (which is different from the inclusive scan, performed by the Hillis-Steele). The algorithm is divided into two main steps. 
+The first thing is to construct the so-called \textbf{tree-sum} \footnote{The notion of the tree-sum is not a fundamental notion. However, I've seen this notion in at least two 
+sources. So let's call it like that.}
+
+\begin{figure}
+  \centering
+  \begin{subfigure}[t]{0.45\textwidth}
+    \centering
+    \includegraphics[width=0.95\textwidth]{pngs/blelloch_sum_tree.png.png}
+  \end{subfigure}
+  \begin{subfigure}[t]{0.45\textwidth}
+    \centering
+    \includegraphics[width=0.95\textwidth]{pngs/blelloch.png}
+\end{subfigure}
+  \caption{The illustration of the blelloch sum-tree - the first step to the Blelloch scan algorithm (on the left).
+  Based on the sum-tree, we proceed to compute the Blelloch algorithm's second part, to find the scan result.}
+\label{fig:blelloch_scan}
+\end{figure}
+The tree-sum is easier to illustrate with a graphical example \autoref{fig:blelloch_scan}. In this simple illustration, 
+we have 8 threads, and an input array of size 8, which is simply given by the corresponding lane index.
+The in order to get the sum-tree, we first add elements pairwise. Then we add the obtained elements pairwise. 
+This process is performed until only one iteration is left. This is where we stop. In other words, this 
+can be seen as some kind of reduce operation. Namely, we're just reducing neighbours together. Indeed, 
+we're adding $0$ \& $1$, which now becomes the \textit{new first element for the next iteration.} Then, 
+we're adding $2$ \& $3$, which now becomes the \textit{new second element for the next iteration.} Once 
+this process is done for all elements, we repeat the same thing with the \textit{new first and new second elements just obtained}.
+The last element that will be obtained is will be the result of a reduce operation. The difference here between the reduce, is that 
+we're keeping those intermediate results, of the reduce operation.
+Once this sum-tree is constructed, we now start to compute the Blelloch scan algorithm. This second step of 
+the Blelloch algorithm may seem weird, and intuitively, even surprising that it works (at least for me). 
+This process of crossing elements down is sometimes reffered to as the \textbf{down-sweep} process. The corresponding 
+primitive operation of adding two elements, writing the sum down \textbf{and} reporting the right element to the left \autoref{fig:blelloch_scan} is 
+an operation, that has 2 inputs and 2 outputs, which is different from the seen reduce operator, where simply 2 numbers were added and put downwards.
+This cross operator is sometimes reffered to as the down-sweep operator. This primitive operator for 2 elements located at $i$ and $j$ 
+can be written as something like $in[i] + in[j] \xrightarrow{} out[j]\text{ ; } in[j] \xrightarrow{} out[i]$. 
+
+
+Let's have a look at the Blelloch scan algorithm, proposed by Mark Harris \cite{harris_parallel_2007} and
+\cite{boreskov__nodate}. To be more precise, let's first try to understand the initial step of this algorithm, 
+that is, building the mentioned sum-tree:
+
+\begin{listing}[ht!]
+\inputminted[frame=single, framesep=1mm, linenos=true]{cuda}{cucodes/blelloch_kernel.cu}
+\caption{The algorithm to build the sum-tree.}
+\end{listing}
+
+Let's now discuss step-by step, what is happening here. What we do first is allocate shared memory and copy the corresponding 
+data to this shared memory. You may have noticed that the number of shared memory is a bit strange. This is however not a 
+problem. This is done in all scan algorithm implementations and it is done for convenience. After that, the main loop 
+starts the main iteration. The initialization of \verb|d| starts with assigning the value of the half of \verb|n|, which is the size.
+After, we check if the thread id is less than \verb|d|. Note that the variable \verb|d| goes from \verb|n/2|, then \verb|n/4|, 
+\verb|n/8|, \verb|n/16|, etc... The crucial part is then the computation of \verb|ai| and \verb|bi|, which are the indices of the 2 
+variables in the array, that need to be added, when constructing the sum-tree. Once the indices are known, we do the
+addition. When this is done, the offset is multiplied by 2. The origin of these 
+expression for \verb|ai| \& \verb|bi| can be understood quite well by considering 
+separate cases for different \verb|tid|'s. Once again, the idea here is to really go 
+over the half of the threads (\verb|d| going from \verb|n/2| to 1, getting divided 
+by 2 at every iteration) and adding the elements in the same pattern as described in the 
+sum-tree algorithm. The next step is to go over the elements and perform the described 
+down-sweep over the array. 
+
+
+
+Let's now have a look at the concluding part of the algorithm (\autoref{listing:second_part_blelloch}). We start that by setting the first (here it is the last, as we're 
+considering that the algorithm goes from bottom to top) element to the neutral, as we're performing the exclusive scan. Then we 
+proceed to do a similar thing as we did during the first sum-tree step. The difference here, is that we're setting the 
+\verb|d| to be one, and iterating up to \verb|n|, by multiplying it by 2. The offset now is getting 
+decremented, dividing it at every iteration by \verb|2|. Then, similarly, we're checking whether the thread id is less than 
+d. Here, the conceptual difference with the tree-sum iteration is that \textsl{we're iterating from the other side of the array.} 
+Indeed, at the first iterations (in this second part), very few threads pass the check. Compared to the tree-sum algorithm, where, at the first iterations, many 
+threads pass the check. This is why we obtain an \textit{reverse-like} iteration.
+
+\begin{listing}[ht!]
+\inputminted[frame=single, framesep=1mm, linenos=true]{cuda}{cucodes/blelloch_end.cu}
+\caption{The second, concluding part of the algorithm, performing the blelloch exclusive scan.}
+\label{listing:second_part_blelloch}
+\end{listing}
+
+At lines $11$ \& $12$, we are computing the indices that are of our interest. You may notice that the 
+expression for computing these indices is exactly the same as those in the sum-tree part. As I already 
+mentioned, the idea and origin of these expressions seems obvious, once we really consider different 
+particular examples of those \footnote{That is, when we fix the number of threads at 8, and consider the iterations for different d's, n's and offsets. \\
+Then fix the number of threads at e.g. 16 and consider different values for d's, n's and offsets. And 
+etc...}. On lines $15$ and $17$, this down-sweep operator is performed. That is, this cross-operator 
+is performed by reporting the i'th element to the j'th, and adding the 2 elements at i.
+Finally, we need to syncronize threads before we copy the data. Thus, the final step is to simply copy 
+the obtained elements of the exclusive scan to global memory.
+
+
+The scan algorithm is a fundamental concept in parallel programming. We've seen two \sout{not-so} simple scan algorithms. 
+The second implementation comes out to be more efficient than the first inclusive scan. However, it is possible to significantly improve the 
+second algorithm too. Indeed, the second algorithm suffers from bank conflicts of multiple orders. I will not comment on these for the moment, 
+as these improvements are nicely commented in Harris' Guide on prefix CUDA scan \cite{harris_chapter_nodate}. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

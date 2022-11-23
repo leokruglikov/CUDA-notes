@@ -230,7 +230,7 @@ CUDA functionality, is to look it up in the NVidia's developer's guide \cite{cen
         on a warp level (see \autoref{fig:shfl_down_reduce}). 
 \end{itemize}
 
-\begin{figure}
+\begin{figure}[ht!]
   \centering
   \includegraphics[width=0.8\textwidth]{pngs/shfl_down_reduce.jpg}
   \caption{The implemented reduce algorithm using the shuffle-down method. 
@@ -372,7 +372,7 @@ One may see that the sequential version does not fully use the potential of the 
 transfer mechanisms are waiting for others to finish. To solve this problem, one uses the asynchronous memory version.
 In this case, the execution pipeline would look like that:
 
-\begin{figure}
+\begin{figure}[ht!]
   \centering 
   \includegraphics[scale=0.15]{pngs/asyncmem-page2.png}
   \caption{Scenario of the execution pipeline, which is fully asynchronous and fully uses the memory transfer mechanism's resources.}

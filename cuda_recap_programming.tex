@@ -113,6 +113,11 @@ Once here, we seek for {\fontfamily{pcr}\selectfont /samples/1\_Utilities/device
 (or something similar). 
 From here, we execute {\fontfamily{pcr}\selectfont ./deviceQuery}.   
 }.
+Alternatively, we can perform this in code. The device properties can be stored in a structure. In the 
+CUDA API, this structure is called \verb|struct cudaDeviceProp|, which has many attributes in it. A few of them are \verb|int clockRate|, \verb|int maxGridSize|, \verb|size_t totalGlobalMem| and many more ((see the official documentation). 
+To actually get the properties, one passes the initialized struct's pointer to the function: 
+\verb|cudaGetDeviceProperties(&dev_props)|. After the invocation of this function, we should 
+be able to get the properties by setting \verb|dev_props.maxGridSize| for example.
 
 \subsection{Memory}
 

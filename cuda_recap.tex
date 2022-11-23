@@ -21,7 +21,9 @@
 \usepackage{nicefrac}
 \usepackage{wrapfig}
 \usepackage{hyperref}
-\usepackage[russian]{babel}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{dsfont}
 
 \newcommand\dout{
    \bgroup
@@ -35,7 +37,8 @@
 \MakeRobust\dout
 
 \usepackage{minted}
-\setminted{fontsize=\small,baselinestretch=0.8}
+\setminted{fontsize=\small, baselinestretch=0.8}
+%\setminted[cuda]{fontsize=\small, frame=lines, framesep=2mm, baselinestretch=1.2, bgcolor=LightGray, linenos}
 
 
 \newcommand\titleofdoc{GPGPU Programming with CUDA}
