@@ -8,7 +8,7 @@
 \setlength{\parskip}{1em} % paragraphs separated by one line
 \usepackage[format=plain,
             font=it]{caption} % Italicizes figure captions
-\usepackage[english]{babel}
+\usepackage[english, russian]{babel}
 \usepackage{csquotes}
 \renewcommand{\headrulewidth}{0pt}
 \geometry{letterpaper, portrait, margin=1in}
@@ -24,6 +24,10 @@
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{dsfont}
+\usepackage[backend=bibtex, language=auto, autolang=other, bibencoding=utf8]{biblatex}
+\usepackage[T1,T2A]{fontenc}% Russian language support
+\addbibresource{./citation.bib}
+\usepackage{algpseudocodex}
 
 \newcommand\dout{
    \bgroup
@@ -73,6 +77,7 @@
 \fancyhf{}
 \rhead{\thepage}
 
+
 \renewcommand{\baselinestretch}{0.5}\normalsize
 \tableofcontents
 \renewcommand{\baselinestretch}{1}\normalsize
@@ -109,8 +114,8 @@
 %
 
 \newpage
-\bibliography{citation}
 \bibliographystyle{plainurl}
+\printbibliography
 
 \end{document}
 

@@ -467,6 +467,149 @@ The second implementation comes out to be more efficient than the first inclusiv
 second algorithm too. Indeed, the second algorithm suffers from bank conflicts of multiple orders. I will not comment on these for the moment, 
 as these improvements are nicely commented in Harris' Guide on prefix CUDA scan \cite{harris_chapter_nodate}. 
 
+\subsection{Histogram}
+An another fundamentally important algorithm is the construction of a histogram, often simply reffered to as histogram.
+We can already feel where the multi-threaded architecture can be used. Indeed, a histogram consists of data, that 
+we need to partition into different bins. So let's suppose we have $N$ bins, ranging from minimum $m$ to maximum $M$.
+Then the idea of an algorithm to do so (in fact, either sequential or parallel) 
+will be simple: for some data in the array/dataset $a_0, a_1, ..., a_{n-1}$ of index \verb|i| will be checked whether it is smaller or larger than some value; based 
+on that, we will update the count of the corresponding bin by one. The output will therefore also be 
+an array of another size (most likely smaller than the input data) of the form $c_0, c_1, ..., c_{k-1}$, where 
+the element $\{c_i\}$ holds the number of elements $\{a_k\}_i$ that belong to the bin $\{c_i\}$. We will call it 
+either \textit{bin} or \textit{counter}.
+
+For the simplicity, we will consider integer-like bins, that is, the input data $\{a_0, a_1, ..., a_{n-1}\}$, with 
+$a_i \in [\![0,255]\!]$, meaning that the number of elements of the output set $c_0, c_1, ..., c_{k-1}$ is of size $256$.
+
+\subsubsection*{Histogram with global memory}
+The first and the simplest idea coming to mind is to simply use the global memory. 
+That is, the idea is that every thread that was scheduled, will "analyze" one separate element of the 
+input data. Then, this specific thread will increment the associated counter of the histogram.
+There is however a caveat. All of the threads execute in parallel and there is a possibility 
+that at some moment in time, multiple threads would want to increment one same bin of the same 
+histogram. In that case, this counter will serve and got change by two (or multiple) different
+threads at once. There is thus a data race. This means that we will require atomic operations
+(see \autoref{subsub:atomics}) \cite{osnovi_raboti}. 
+
+Let's write the simple histogram kernel, that will make use of global memory and atomic 
+operations and comment on it.
+
+So in \autoref{listing:hist_global}, first line, we're initializing the size of the 
+input data that we will pass to the kernel. Then, we're calculating the thread ID, that 
+the kernel will run on. After, we compute the stride. In this case, the stride only plays the 
+role if the number of input data is larger than the number of threads fitting in all the blocks 
+in the $x$ direction. Indeed, if it is not the case, the threads will be "indexed further" than the 
+available blocks in the $x$ direction, e.g. it can "continue getting indexed further on different SM's". 
+This is not very crucial for the scope of the algorithm.
+Then, we increment atomically the counter of the histogram using \verb|hist[in[tid]]|. This does work thanks 
+to our supposition that the input data ar natural numbers $[\![0,255]\!]$ and the histogram also having 
+$255$ bins. Therefore, the inputs also serve as indices.
+
+\begin{listing}[ht!]
+\begin{minted}[frame=single, framesep=1mm, linenos=true]{cuda}
+#define HIST_SIZE (100*1024*1024)
+__global__ void hist_global(int* input, long int size, int* hist_out){
+  //compute the thread ID 
+  int tid = threadIdx.x + blockIdx.x * blockDim.x;
+  int stride = blockDim.x*gridDim.x;
+  while(i<size){
+    atomicAdd(&(histo[input[tid]]), 1);
+    i+=0;
+  }
+};
+\end{minted}
+\caption{Global memory, construction of histogram (non-optimal and 
+slow implementation of the algorithm.)}
+\label{listing:hist_global}
+\end{listing}
+
+The problem with this implementation is quite obvious-it's simply 
+very slow. Of course, for huge histogram with extremely huge sizes of input, 
+there's maybe an small improvement over some sequential CPU version. But in 
+a general case, this global memory version of the histogram 
+performs slower than the sequential CPU version.
+
+
+
+There are two problems with this implementation - one is the usage of the 
+atomical operations, which always slows down any program. And the second one is 
+the access to the global memory. Thus, when this huge number of threads are trying to 
+write into the histogram, the scheduler needs to make sure there is no conflict. This 
+slows very much the execution of the program.
+
+To speed up the implementation, we will, as usual, try to implement it using the 
+shared memory.
+
+\begin{figure}[ht!]
+  \vspace{-0.3cm}
+  \centering
+  \includegraphics[width=\textwidth]{./pngs/shared_histogram.drawio.png}
+  \caption{The working principle of the histogram construction using the shared memory.
+  After the computations are done, the results must still be copied further to the global memory. 
+  This is not shown on the figure.}
+  \label{fig:shared_hist}
+\end{figure}
+
+\subsubsection*{Histogram with shared memory}
+
+The idea of the Histogram with using the shared memory is that we're working with the 
+histogram locally, by taking a copy of it. In that case, only threads within the block will 
+be racing for the histogram, situated in the shared memory. 
+In this implementation, we will still use the atomic operations.
+However, in this case, the number of threads racing for potentially shared data, will be significantly 
+smaller, as well as the time it takes for the threads to access shared memory will also be much smaller 
+than in the global memory implementation.
+
+The concept is quite simple and very similar to the previous mechanisms. It is illustrated on \autoref{fig:shared_hist}.
+
+Let's now see how it is implemented in the kernel in question \cite{tehnologija_cuda}. 
+We haven't discussed the process of copying the result to the output.
+Note that we're copying the data from the shared memory 
+from all threads from all blocks simultaneously. 
+Therefore, the operation should be atomic (see \autoref{listing:shared_histogram}).
+
+\begin{listing}[ht!]
+\begin{minted}[frame=single, framesep=1mm]{cuda}
+  __global__ void share_hist(int* in_buf, long int size,
+                             int* hist)
+{
+    //initialize the shared memory
+    __shared__ int shared_temp[256];
+    //set the just initialized memory to 0
+    temp[threadIdx.x] = 0;
+
+    //we synchronize the threads so that we 
+    //do not start counting before all was set to 0
+    __syncthreads();
+
+    //compute the global thread id
+    int tid = threadIdx.x + blockIdx.x*blockDim.x;
+
+    //offset for the case if the entry data 
+    //is longer than the number of launched threads
+    int offset = blockDim.x*gridDim.x;
+    //start counting (note, the while loop executes 
+    //more than once in the case if the input data 
+    //is longer than the number of launched threads)
+    while(tid < size){
+      //counting in temp[] if the histogram
+      //at position tid should be counted (see fig)
+      atomicAdd( &temp[in_buf[i]], 1 );
+      i+=offset;
+    }
+
+    //syncronize threads, so that operations are done before copying
+    __syncthreads();
+    //we're now copying the resulting data to the output
+    atomicAdd(&(hist[threadIdx.x]), temp[threadIdx.x]);
+}
+\end{minted}
+\caption{Shared memory histogram implementation.}
+\label{listing:shared_histogram}
+\end{listing}
+
+
+
 
 
 
